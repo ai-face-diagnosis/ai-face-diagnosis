@@ -1,10 +1,9 @@
 package com.pdiagnosis.userService.model.users;
 
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.Lob;
-import jakarta.persistence.Table;
+import jakarta.persistence.*;
 import lombok.*;
+
+import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "users")
@@ -13,8 +12,46 @@ import lombok.*;
 @NoArgsConstructor
 @AllArgsConstructor
 @ToString(callSuper = true)
-public class User extends BaseUser {
+public class User {
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
 
+    @Column(nullable = false, unique = true, length = 50)
+    private String username;
+
+    @Column(nullable = false)
+    private String password;
+
+    @Column(nullable = false, unique = true, length = 100)
+    private String email;
+
+    @Column(length = 100)
+    private String fullName;
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 20)
+    private Role role;
+
+    @Column(nullable = false)
+    private boolean active = true;
+
+    @Column(nullable = false, updatable = false)
+    private LocalDateTime createdAt = LocalDateTime.now();
+
+    @Column(nullable = false)
+    private LocalDateTime updatedAt = LocalDateTime.now();
+    @Column(length = 255)
+    private String profileImageUrl; // ссылка на фото пользователя
+    @PreUpdate
+    protected void onUpdate() {
+        this.updatedAt = LocalDateTime.now();
+    }
+
+    public enum Role {
+        ADMIN,
+        USER
+    }
     @Column
     private Integer age;
 

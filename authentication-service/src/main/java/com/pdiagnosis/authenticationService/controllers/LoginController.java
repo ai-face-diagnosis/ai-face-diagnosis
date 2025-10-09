@@ -1,8 +1,8 @@
 package com.pdiagnosis.authenticationService.controllers;
 
-import com.pdiagnosis.backend_api.authenticationService.config.JwtTokenGenerator;
-import com.pdiagnosis.backend_api.authenticationService.model.AuthenticationUser;
-import com.pdiagnosis.backend_api.authenticationService.services.AuthenticationUserService;
+import com.pdiagnosis.authenticationService.config.JwtTokenGenerator;
+import com.pdiagnosis.authenticationService.model.AuthenticationUser;
+import com.pdiagnosis.authenticationService.services.AuthenticationUserService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -33,10 +33,10 @@ public class LoginController {
     // DTO для ответа с токеном
     public static class LoginResponse {
         public String token;
-        public String role;
-        public LoginResponse(String token, String role) {
+
+        public LoginResponse(String token) {
             this.token = token;
-            this.role = role;
+
         }
     }
 
@@ -59,19 +59,18 @@ public class LoginController {
                     .body("Invalid username or password");
         }
 
-        // Определяем роль и связанный объект (User или Admin)
-        String role;
-        if (authUser.getUser() != null) {
-            role = authUser.getUser().getRole().name();
-        } else if (authUser.getAdmin() != null) {
-            role = authUser.getAdmin().getRole().name();
-        } else {
-            role = "UNKNOWN";
-        }
-
         // Генерация JWT
-        String token = jwtTokenGenerator.generateToken(authUser.getUsername(), role);
+        String token = jwtTokenGenerator.generateToken(authUser.getUsername());
 
-        return ResponseEntity.ok(new LoginResponse(token, role));
+        return ResponseEntity.ok(new LoginResponse(token));
+    }
+    @PostMapping("/register")
+    public ResponseEntity<?> register(@RequestBody AuthenticationUser newUser) {
+        if (authenticationUserService.existsByUsername(newUser.getUsername())) {
+            return ResponseEntity.status(HttpStatus.CONFLICT)
+                    .body("Username already exists");
+        }
+        AuthenticationUser created = authenticationUserService.createUser(newUser);
+        return ResponseEntity.status(HttpStatus.CREATED).body(created);
     }
 }

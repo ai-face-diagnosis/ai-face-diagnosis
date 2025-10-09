@@ -1,6 +1,6 @@
 package com.pdiagnosis.authenticationService.repositories;
 
-import com.pdiagnosis.backend_api.authenticationService.model.AuthenticationUser;
+import com.pdiagnosis.authenticationService.model.AuthenticationUser;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.Optional;

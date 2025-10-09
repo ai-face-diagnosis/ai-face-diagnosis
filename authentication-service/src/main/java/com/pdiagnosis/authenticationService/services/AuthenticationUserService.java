@@ -1,7 +1,7 @@
 package com.pdiagnosis.authenticationService.services;
 
-import com.pdiagnosis.backend_api.authenticationService.model.AuthenticationUser;
-import com.pdiagnosis.backend_api.authenticationService.repositories.AuthenticationUserRepository;
+import com.pdiagnosis.authenticationService.model.AuthenticationUser;
+import com.pdiagnosis.authenticationService.repositories.AuthenticationUserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;

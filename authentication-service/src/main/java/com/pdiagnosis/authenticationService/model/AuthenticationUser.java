@@ -33,14 +33,12 @@ public class AuthenticationUser {
     @Column(nullable = false)
     private LocalDateTime updatedAt = LocalDateTime.now();
 
-    // Связь с User или Admin (опционально)
-    @OneToOne
-    @JoinColumn(name = "user_id")
-    private com.pdiagnosis.backend_api.userService.model.users.User user;
-
-    @OneToOne
-    @JoinColumn(name = "admin_id")
-    private com.pdiagnosis.backend_api.userService.model.users.Admin admin;
+    /**
+     * ID пользователя из userService (другая база данных).
+     * Используется для связи на логическом уровне.
+     */
+    @Column(name = "user_id", nullable = false)
+    private Long userId;
 
     @PreUpdate
     protected void onUpdate() {

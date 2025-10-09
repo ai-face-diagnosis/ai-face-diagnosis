@@ -1,7 +1,7 @@
 package com.pdiagnosis.authenticationService.controllers;
 
-import com.pdiagnosis.backend_api.authenticationService.model.AuthenticationUser;
-import com.pdiagnosis.backend_api.authenticationService.services.AuthenticationUserService;
+import com.pdiagnosis.authenticationService.model.AuthenticationUser;
+import com.pdiagnosis.authenticationService.services.AuthenticationUserService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
