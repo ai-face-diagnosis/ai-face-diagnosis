@@ -1,4 +1,4 @@
-package com.pdiagnosis.backend_api.model.users;
+package com.pdiagnosis.backend_api.userService.model.users;
 
 import jakarta.persistence.*;
 import lombok.*;

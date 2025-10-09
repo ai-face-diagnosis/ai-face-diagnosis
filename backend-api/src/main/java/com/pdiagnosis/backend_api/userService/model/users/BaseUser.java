@@ -1,4 +1,4 @@
-package com.pdiagnosis.backend_api.model.users;
+package com.pdiagnosis.backend_api.userService.model.users;
 
 import jakarta.persistence.*;
 import lombok.*;
@@ -39,7 +39,8 @@ public abstract class BaseUser {
 
     @Column(nullable = false)
     private LocalDateTime updatedAt = LocalDateTime.now();
-
+    @Column(length = 255)
+    private String profileImageUrl; // ссылка на фото пользователя
     @PreUpdate
     protected void onUpdate() {
         this.updatedAt = LocalDateTime.now();

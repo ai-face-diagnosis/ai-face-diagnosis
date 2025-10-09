@@ -1,6 +1,6 @@
-package com.pdiagnosis.backend_api.model.history;
+package com.pdiagnosis.backend_api.userService.model.history;
 
-import com.pdiagnosis.backend_api.model.users.User;
+import com.pdiagnosis.backend_api.userService.model.users.User;
 import jakarta.persistence.*;
 import lombok.*;
 import java.time.LocalDateTime;

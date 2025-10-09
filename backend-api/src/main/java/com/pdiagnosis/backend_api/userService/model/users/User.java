@@ -1,4 +1,4 @@
-package com.pdiagnosis.backend_api.model.users;
+package com.pdiagnosis.backend_api.userService.model.users;
 
 import jakarta.persistence.*;
 import lombok.*;
@@ -17,9 +17,6 @@ public class User extends BaseUser {
 
     @Column(length = 10)
     private String gender; // "MALE", "FEMALE", "OTHER"
-
-    @Column(length = 255)
-    private String profileImageUrl; // ссылка на фото пользователя
 
     @Lob
     @Column(columnDefinition = "TEXT")
