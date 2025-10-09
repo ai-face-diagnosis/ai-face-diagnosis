@@ -1,9 +1,10 @@
 package com.pdiagnosis.backend_api.authenticationService.controllers;
 
 import com.pdiagnosis.backend_api.authenticationService.config.JwtTokenGenerator;
+import com.pdiagnosis.backend_api.authenticationService.model.AuthenticationUser;
+import com.pdiagnosis.backend_api.authenticationService.services.AuthenticationUserService;
 
-import com.pdiagnosis.backend_api.userService.model.users.User;
-import com.pdiagnosis.backend_api.userService.services.UserService;
+
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -17,9 +18,10 @@ import java.util.Optional;
 @RequiredArgsConstructor
 public class LoginController {
 
-    private final UserService userService;
+    private final AuthenticationUserService authenticationUserService;
+    private final JwtTokenGenerator jwtTokenGenerator;
+
     private final PasswordEncoder passwordEncoder;
-    private final JwtTokenGenerator jwtTokenProvider;
 
     // DTO для запроса логина
     public static class LoginRequest {
@@ -30,29 +32,45 @@ public class LoginController {
     // DTO для ответа с токеном
     public static class LoginResponse {
         public String token;
-        public LoginResponse(String token) { this.token = token; }
+        public String role;
+        public LoginResponse(String token, String role) {
+            this.token = token;
+            this.role = role;
+        }
     }
 
     @PostMapping("/login")
     public ResponseEntity<?> login(@RequestBody LoginRequest loginRequest) {
-        // Ищем пользователя по username
-        Optional<User> userOpt = userService.findByUsername(loginRequest.username);
-        if (userOpt.isEmpty()) {
+        // Находим AuthenticationUser
+        Optional<AuthenticationUser> authUserOpt =
+                authenticationUserService.findByUsername(loginRequest.username);
+
+        if (authUserOpt.isEmpty()) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
                     .body("Invalid username or password");
         }
 
-        User user = userOpt.get();
+        AuthenticationUser authUser = authUserOpt.get();
 
-        // Проверяем пароль
-        if (!passwordEncoder.matches(loginRequest.password, user.getPassword())) {
+        // Проверка пароля
+        if (!passwordEncoder.matches(loginRequest.password, authUser.getPassword())) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
                     .body("Invalid username or password");
         }
 
-        // Генерируем JWT
-        String token = jwtTokenProvider.generateToken(user.getUsername(), user.getRole().name());
+        // Определяем роль и связанный объект (User или Admin)
+        String role;
+        if (authUser.getUser() != null) {
+            role = authUser.getUser().getRole().name();
+        } else if (authUser.getAdmin() != null) {
+            role = authUser.getAdmin().getRole().name();
+        } else {
+            role = "UNKNOWN";
+        }
 
-        return ResponseEntity.ok(new LoginResponse(token));
+        // Генерация JWT
+        String token = jwtTokenGenerator.generateToken(authUser.getUsername(), role);
+
+        return ResponseEntity.ok(new LoginResponse(token, role));
     }
 }

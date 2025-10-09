@@ -1,6 +1,5 @@
-package com.pdiagnosis.backend_api.userService.model.history;
+package com.pdiagnosis.backend_api.applicationService.model;
 
-import com.pdiagnosis.backend_api.userService.model.users.User;
 import jakarta.persistence.*;
 import lombok.*;
 import java.time.LocalDateTime;
@@ -11,7 +10,7 @@ import java.time.LocalDateTime;
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
-@ToString
+@Builder
 public class LLMRequestHistory {
 
     @Id
@@ -22,18 +21,18 @@ public class LLMRequestHistory {
     private LocalDateTime requestTime = LocalDateTime.now();
 
     @Column(nullable = false, length = 64)
-    private String imageHash; // хэш изображения (например, SHA-256)
-
-    @Column(nullable = true, length = 255)
-    private String imageUrl; // ссылка на изображение
+    private String imageHash;
 
     @Lob
     @Column(nullable = false, columnDefinition = "TEXT")
-    private String llmResponse; // текст, который вернула LLM
+    private String llmResponse;
+
+    @Column(length = 255)
+    private String imageUrl;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "user_id", nullable = false)
-    private User user; // пользователь, который сделал запрос
+    @JoinColumn(name = "chat_id", nullable = false)
+    private Chat chat;
 
     @PrePersist
     protected void onCreate() {
