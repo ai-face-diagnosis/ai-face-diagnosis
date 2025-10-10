@@ -1,13 +1,12 @@
 package com.pdiagnosis.applicationService.services;
 
-import com.pdiagnosis.applicationService.model.Chat;
 import com.pdiagnosis.applicationService.repositories.ChatRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
 import java.util.Optional;
-
+import com.pdiagnosis.Chat;
 @Service
 @RequiredArgsConstructor
 public class ChatService {

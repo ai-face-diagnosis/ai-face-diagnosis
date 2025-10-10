@@ -17,7 +17,7 @@ public class SwaggerConfig {
     public OpenAPI customOpenAPI() {
         return new OpenAPI()
                 .info(new Info()
-                        .title("PDiagnosis Chat Service API")
+                        .title("PDiagnosis User Service API")
                         .version("1.0")
                         .description("API for managing users"))
                 .addServersItem(new Server().url("http://localhost:8081").description("User Service"))
@@ -31,10 +31,10 @@ public class SwaggerConfig {
     }
 
     @Bean
-    public GroupedOpenApi chatApi() {
+    public GroupedOpenApi userApi() {
         return GroupedOpenApi.builder()
-                .group("chat")
-                .packagesToScan("com.pdiagnosis.applicationService.controllers")
+                .group("user")
+                .packagesToScan("com.pdiagnosis.userService.controllers")
                 .pathsToMatch("/api/**")
                 .build();
     }

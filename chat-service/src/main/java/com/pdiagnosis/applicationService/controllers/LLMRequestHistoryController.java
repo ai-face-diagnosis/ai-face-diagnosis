@@ -1,17 +1,22 @@
 package com.pdiagnosis.applicationService.controllers;
 
-import com.pdiagnosis.applicationService.model.Chat;
-import com.pdiagnosis.applicationService.model.LLMRequestHistory;
 import com.pdiagnosis.applicationService.services.ChatService;
 import com.pdiagnosis.applicationService.services.LLMRequestHistoryService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import com.pdiagnosis.LLMRequestHistory;
 
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.List;
 import java.util.Optional;
-
+import com.pdiagnosis.Chat;
 @RestController
 @RequestMapping("/api/chats/{chatId}/history")
 @RequiredArgsConstructor
@@ -43,6 +48,33 @@ public class LLMRequestHistoryController {
                     .body("History record not found");
         }
     }
+    @GetMapping("/image")
+    public ResponseEntity<byte[]> getImageByUrl(@RequestParam String imageUrl) {
+        if (imageUrl == null || imageUrl.isEmpty()) {
+            return ResponseEntity.badRequest().build();
+        }
+
+        try {
+            // Предполагаем, что imageUrl хранится как "/photo/filename.png"
+            String fileName = Paths.get(imageUrl).getFileName().toString();
+            Path filePath = Paths.get("src/main/resources/photo", fileName);
+
+            if (!Files.exists(filePath) || !Files.isReadable(filePath)) {
+                return ResponseEntity.notFound().build();
+            }
+
+            byte[] imageBytes = Files.readAllBytes(filePath);
+
+            HttpHeaders headers = new HttpHeaders();
+            // Можно определить тип по расширению файла
+            headers.setContentType(MediaType.IMAGE_PNG);
+
+            return new ResponseEntity<>(imageBytes, headers, HttpStatus.OK);
+        } catch (IOException e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
+
 
     /**
      * Создать новую запись истории
@@ -76,7 +108,7 @@ public class LLMRequestHistoryController {
         LLMRequestHistory existing = existingOpt.get();
         existing.setLlmResponse(updated.getLlmResponse());
         existing.setImageUrl(updated.getImageUrl());
-        existing.setImageHash(updated.getImageHash());
+
 
         LLMRequestHistory saved = llmRequestHistoryService.update(existing);
         return ResponseEntity.ok(saved);

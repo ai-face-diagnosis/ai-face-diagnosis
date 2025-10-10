@@ -1,8 +1,7 @@
 package com.pdiagnosis.applicationService.repositories;
 
-import com.pdiagnosis.applicationService.model.Chat;
 import org.springframework.data.jpa.repository.JpaRepository;
-
+import com.pdiagnosis.Chat;
 import java.util.List;
 import java.util.Optional;
 

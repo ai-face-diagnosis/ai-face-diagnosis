@@ -21,9 +21,6 @@ public class LLMRequestHistory {
     @Column(nullable = false)
     private LocalDateTime requestTime = LocalDateTime.now();
 
-    @Column(nullable = false, length = 64)
-    private String imageHash;
-
     @Lob
     @Column(nullable = false, columnDefinition = "TEXT")
     private String llmResponse;

@@ -108,6 +108,11 @@
 			<groupId>org.flywaydb</groupId>
 			<artifactId>flyway-database-postgresql</artifactId>
 		</dependency>
+		<dependency>
+			<groupId>com.pdiagnosis</groupId>
+			<artifactId>common-dto</artifactId>
+			<version>0.0.1-SNAPSHOT</version>
+		</dependency>
 	</dependencies>
 
 	<build>

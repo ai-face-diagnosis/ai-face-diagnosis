@@ -10,10 +10,11 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
+import java.util.*;
 
 @RestController
 @RequestMapping("/api/chat")
@@ -46,9 +47,10 @@ public class ChatController {
     public ResponseEntity<?> messageWithImage(
             @RequestParam("file") MultipartFile file,
             @RequestParam(value = "prompt", required = false) String prompt,
-            @RequestParam("userId") Long userId
+            @RequestParam("chatId") Long chatId
+
     ) {
-        return sendQuestion(file, prompt, userId);
+        return sendQuestion(file, prompt, chatId);
     }
 
     @PostMapping(value = "/new/voice", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
@@ -87,17 +89,18 @@ public class ChatController {
     @GetMapping("/{chatId}")
     public ResponseEntity<?> getChatHistory(@PathVariable Long chatId) {
         try {
-            // Запрос к сервису для получения истории чата
-            String url = chatHistoryGetter.replace("{chatId}", chatId.toString()).replace("{id}", "");
-            ResponseEntity<List> response = restTemplate.getForEntity(url, List.class);
-            if (response.getStatusCode() == HttpStatus.OK) {
-                return ResponseEntity.ok(response.getBody());
-            }
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("error", "Chat history not found"));
+            String historyServiceUrl = "http://llm-history-service/api/chats/" + chatId + "/history/getAllWithImages";
+            ResponseEntity<String> response = restTemplate.getForEntity(historyServiceUrl, String.class);
+            return ResponseEntity.status(response.getStatusCode()).body(response.getBody());
         } catch (Exception e) {
-            return ResponseEntity.internalServerError().body(Map.of("error", e.getMessage()));
+            // Логируем ошибку и возвращаем 500
+            System.err.println("Error fetching chat history: " + e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of("error", "Failed to fetch chat history: " + e.getMessage()));
         }
     }
+
+
 
     @GetMapping("/create")
     public ResponseEntity<?> createChat(
@@ -127,32 +130,26 @@ public class ChatController {
         }
     }
 
-    private ResponseEntity<?> sendQuestion(MultipartFile imageFile, String prompt, Long userId) {
+    private ResponseEntity<?> sendQuestion(MultipartFile imageFile, String prompt, Long chatId) {
         try {
-            if (imageFile == null || imageFile.isEmpty()) {
+            if (imageFile.isEmpty()) {
                 return ResponseEntity.badRequest().body(Map.of("error", "Missing image file"));
             }
-
+            boolean faceDetected = true;
             // 🔹 Проверка изображения на наличие лица
-            boolean faceDetected = checkFaceOnImage(imageFile);
+            if (imageFile != null) {
+                faceDetected = checkFaceOnImage(imageFile);
+            }
             if (!faceDetected) {
                 return ResponseEntity.badRequest().body(Map.of("error", "No face detected on the image"));
             }
-
+            String llmResult = "";
             // 🔹 Отправка изображения в LLM FastAPI (анализ)
-            String llmResult = sendToFastApiLLM(imageFile);
+            if (imageFile != null)
+                 llmResult = sendToFastApiLLM(imageFile);
 
             // 🔹 Отправка результата анализа и запроса пользователя в Spring LLM
             String finalResponse = sendToSpringLLM(llmResult, prompt);
-
-            // 🔹 Создание нового чата через GET-метод
-            String chatTitle = prompt != null ? prompt.substring(0, Math.min(prompt.length(), 50)) : "Image-based chat";
-            ResponseEntity<?> createChatResponse = createChat(userId, chatTitle);
-            if (createChatResponse.getStatusCode() != HttpStatus.CREATED || createChatResponse.getBody() == null) {
-                return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                        .body(Map.of("error", "Failed to create chat"));
-            }
-            Long chatId = (Long) ((Map<String, Object>) createChatResponse.getBody()).get("chatId");
 
             // 🔹 Сохранение истории
             saveChatHistory(chatId, prompt, finalResponse, imageFile);
@@ -184,21 +181,22 @@ public class ChatController {
     }
 
     private String sendToFastApiLLM(MultipartFile file) {
-        try {
-            HttpHeaders headers = new HttpHeaders();
-            headers.setContentType(MediaType.MULTIPART_FORM_DATA);
-
-            MultiValueMap<String, Object> body = new LinkedMultiValueMap<>();
-            body.add("file", new MultipartInputStreamFileResource(file.getInputStream(), file.getOriginalFilename()));
-            HttpEntity<MultiValueMap<String, Object>> request = new HttpEntity<>(body, headers);
-            ResponseEntity<Map> response = restTemplate.postForEntity(llmFastApiUrl, request, Map.class);
-            if (response.getStatusCode() == HttpStatus.OK && response.getBody() != null) {
-                return (String) response.getBody().get("response");
-            }
-            return "Ошибка при анализе изображения.";
-        } catch (Exception e) {
-            return "Ошибка при анализе изображения: " + e.getMessage();
-        }
+//        try {
+//            HttpHeaders headers = new HttpHeaders();
+//            headers.setContentType(MediaType.MULTIPART_FORM_DATA);
+//
+//            MultiValueMap<String, Object> body = new LinkedMultiValueMap<>();
+//            body.add("file", new MultipartInputStreamFileResource(file.getInputStream(), file.getOriginalFilename()));
+//            HttpEntity<MultiValueMap<String, Object>> request = new HttpEntity<>(body, headers);
+//            ResponseEntity<Map> response = restTemplate.postForEntity(llmFastApiUrl, request, Map.class);
+//            if (response.getStatusCode() == HttpStatus.OK && response.getBody() != null) {
+//                return (String) response.getBody().get("response");
+//            }
+//            return "Ошибка при анализе изображения.";
+//        } catch (Exception e) {
+//            return "Ошибка при анализе изображения: " + e.getMessage();
+//        }
+        return "Типо работает";
     }
 
     private String sendToSpringLLM(String llmResult, String userPrompt) {
@@ -238,22 +236,44 @@ public class ChatController {
 
     private void saveChatHistory(Long chatId, String prompt, String response, MultipartFile imageFile) {
         try {
+            String imageUrl = null;
+
+            // 📸 Если файл передан — сохраняем его на диск
+            if (imageFile != null && !imageFile.isEmpty()) {
+                // Папка для хранения изображений
+                Path uploadDir = Paths.get("src/main/resources/photo");
+                if (!Files.exists(uploadDir)) {
+                    Files.createDirectories(uploadDir);
+                }
+
+                // Уникальное имя файла (чтобы избежать коллизий)
+                String fileName = UUID.randomUUID() + "_" + imageFile.getOriginalFilename();
+                Path filePath = uploadDir.resolve(fileName);
+
+                // Сохраняем файл
+                Files.copy(imageFile.getInputStream(), filePath, StandardCopyOption.REPLACE_EXISTING);
+
+                // Относительный путь, который можно потом отдать клиенту
+                imageUrl = "src/main/resources/photo/" + fileName;
+            }
+
+            // 🧾 Формируем объект истории
             Map<String, Object> history = new HashMap<>();
             history.put("chatId", chatId);
             history.put("prompt", prompt != null ? prompt : "");
             history.put("llmResponse", response);
-            if (imageFile != null) {
-                history.put("imageUrl", imageFile.getOriginalFilename());
-            }
+            history.put("imageUrl", imageUrl);
 
+            // Отправляем запись в сервис чатов
             restTemplate.postForEntity(
                     chatHistoryGetter.replace("{chatId}", chatId.toString()).replace("/{id}", "/create"),
                     history,
                     Map.class
             );
+
         } catch (Exception e) {
-            // Логирование ошибки, но не прерываем выполнение
-            System.err.println("Error saving chat history: " + e.getMessage());
+            System.err.println("❌ Error saving chat history: " + e.getMessage());
         }
     }
+
 }

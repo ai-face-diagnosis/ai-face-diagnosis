@@ -7,7 +7,6 @@ CREATE TABLE chats (
 CREATE TABLE llm_request_history (
     id BIGSERIAL PRIMARY KEY,
     request_time TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    image_hash VARCHAR(64) NOT NULL,
     llm_response TEXT NOT NULL,
     image_url VARCHAR(255),
     chat_id BIGINT NOT NULL,
@@ -18,10 +17,9 @@ CREATE TABLE llm_request_history (
 INSERT INTO chats (user_id, title, created_at)
 VALUES (1, 'Диагностика кожи', CURRENT_TIMESTAMP);
 
-INSERT INTO llm_request_history (request_time, image_hash, llm_response, image_url, chat_id)
+INSERT INTO llm_request_history (request_time, llm_response, image_url, chat_id)
 VALUES (
     CURRENT_TIMESTAMP,
-    'abc123hash',
     'Анализ изображения завершен: кожа в норме',
     'http://example.com/image.jpg',
     (SELECT id FROM chats WHERE title = 'Диагностика кожи')
