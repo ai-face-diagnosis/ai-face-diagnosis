@@ -1,0 +1,74 @@
+
+.slidebar{
+  margin-left: 20px;
+  cursor: pointer;
+  max-width: 50px;
+}
+
+.login{
+    margin-left: 20px;
+    cursor: pointer;
+    max-width: 50px;
+}
+
+.login:hover{
+transform: scale(1.2);
+transition: transform 0.3s;
+}
+
+.slidebar:hover{
+transform: scale(1.2);
+transition: transform 0.3s;
+}
+
+.toggle{
+  margin-right: 20px;
+  cursor: pointer;
+  max-width: 50px;
+}
+
+.toggle:hover{
+transform: scale(1.2);
+transition: transform 0.3s;
+}
+
+
+.header {
+  width: 100%;;
+  display: grid;
+  align-content: center;
+  grid-template-columns: 1fr 1fr;
+  justify-content: space-between;
+  background: var(--bg);
+  position: fixed;
+  height: 50px;
+  z-index: 100;
+}
+
+.header::before {
+  content: '';
+  position: absolute;
+  bottom: -1px;
+  left: 0;
+  width: 100%;
+  height: 2px;
+  background: linear-gradient(90deg, 
+    var(--accent) 0%,
+    rgba(var(--accent-rgb), 0.9) 15%,
+    rgba(var(--accent-rgb), 0.5) 50%,
+    rgba(var(--accent-rgb), 0.1) 80%,
+    transparent 100%
+  );
+}
+
+.liLeft{
+  display: grid;
+  grid-template-columns: min-content min-content;
+  padding-left: 2%;
+}
+
+.liRight{
+  display: grid;
+  justify-content: end;
+  padding-right: 2%;
+}
