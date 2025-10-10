@@ -1,19 +1,40 @@
 package com.pdiagnosis.authenticationService.services;
 
+import com.pdiagnosis.AuthenticationUser;
 import com.pdiagnosis.authenticationService.repositories.AuthenticationUserRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.core.userdetails.User;
+import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.core.userdetails.UserDetailsService;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
-import com.pdiagnosis.AuthenticationUser;
+
 import java.util.List;
 import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
-public class AuthenticationUserService {
+public class AuthenticationUserService implements UserDetailsService {
 
     private final AuthenticationUserRepository authenticationUserRepository;
     private final PasswordEncoder passwordEncoder;
+
+    @Override
+    public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
+        AuthenticationUser authUser = authenticationUserRepository.findByUsername(username)
+                .orElseThrow(() -> new UsernameNotFoundException("User not found: " + username));
+
+        if (!authUser.isActive()) {
+            throw new UsernameNotFoundException("User is not active: " + username);
+        }
+
+        return User.builder()
+                .username(authUser.getUsername())
+                .password(authUser.getPassword())
+                .roles("USER") // Фиктивная роль, так как поле role отсутствует
+                .build();
+    }
 
     /**
      * Создает нового пользователя для аутентификации
@@ -53,6 +74,7 @@ public class AuthenticationUserService {
         user.setActive(false);
         authenticationUserRepository.save(user);
     }
+
     public List<AuthenticationUser> getAllUsers() {
         return authenticationUserRepository.findAll();
     }
@@ -64,5 +86,4 @@ public class AuthenticationUserService {
     public AuthenticationUser updateUser(AuthenticationUser user) {
         return authenticationUserRepository.save(user);
     }
-
 }

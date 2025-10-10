@@ -21,25 +21,25 @@ public class ChatController {
 
     private final RestTemplate restTemplate = new RestTemplate();
 
-    @Value("${services.face-detection.url:http://localhost:8083/api/llm/analyze}")
+    @Value("${services.face-detection.url}")
     private String faceDetectionUrl;
 
-    @Value("${services.llm-fastapi.url:http://localhost:8000/analyze}")
+    @Value("${services.llm-fastapi.url}")
     private String llmFastApiUrl;
 
-    @Value("${services.llm.spring.url:http://localhost:8083/api/llm/chat}")
+    @Value("${services.llm.spring.chat.url}")
     private String llmSpringUrl;
 
-    @Value("${services.llm.spring.url:http://localhost:8083/api/llm/transcribe}")
+    @Value("${services.llm.spring.transcribe.url}")
     private String voiceRecognition;
 
-    @Value("${services.llm.spring.url:http://localhost:8082/api/users/{userId}/chats/create}")
+    @Value("${services.chat.creation.url}")
     private String chatCreation;
 
-    @Value("${services.llm.spring.url:http://localhost:8082/api/chats/{userId}/byId}")
+    @Value("${services.chat.getter.url}")
     private String chatGetter;
 
-    @Value("${services.llm.spring.url:http://localhost:8082/api/chats/{chatId}/history/{id}}")
+    @Value("${services.chat.history.url}")
     private String chatHistoryGetter;
 
     @PostMapping(value = "/new/image", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
