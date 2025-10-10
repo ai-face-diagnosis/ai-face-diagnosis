@@ -11,6 +11,7 @@
 	<groupId>com.pdiagnosis</groupId>
 	<artifactId>user-service</artifactId>
 	<version>0.0.1-SNAPSHOT</version>
+
 	<name>pdiagnosis-users</name>
 	<description>project for hakathon</description>
 	<url/>
@@ -95,6 +96,12 @@
 			<version>0.11.5</version>
 			<scope>runtime</scope>
 		</dependency>
+		<dependency>
+			<groupId>com.pdiagnosis</groupId>
+			<artifactId>common-dto</artifactId>
+			<version>0.0.1-SNAPSHOT</version>
+		</dependency>
+
 
 	</dependencies>
 

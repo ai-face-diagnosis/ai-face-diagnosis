@@ -1,4 +1,4 @@
-package com.pdiagnosis.backend_api;
+package com.pdiagnosis.applicationService;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;

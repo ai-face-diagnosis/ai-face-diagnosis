@@ -1,6 +1,6 @@
 package com.pdiagnosis.userService.services;
 
-import com.pdiagnosis.userService.model.users.User;
+import com.pdiagnosis.User;
 import com.pdiagnosis.userService.repositories.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -24,6 +24,5 @@ public class UserService {
     public Optional<User> findByEmail(String email) {
         return userRepository.findByEmail(email);
     }
-
 
 }

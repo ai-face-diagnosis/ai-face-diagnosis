@@ -15,16 +15,7 @@ public class JwtTokenValidator {
     @Value("${jwt.expiration-ms}")
     private long jwtExpirationMs;
 
-    // Генерация токена
-    public String generateToken(String username, String role) {
-        return Jwts.builder()
-                .setSubject(username)
-                .claim("role", role)
-                .setIssuedAt(new Date())
-                .setExpiration(new Date(System.currentTimeMillis() + jwtExpirationMs))
-                .signWith(SignatureAlgorithm.HS512, jwtSecret)
-                .compact();
-    }
+
 
     // Получение username из токена
     public String getUsernameFromToken(String token) {

@@ -1,6 +1,6 @@
 package com.pdiagnosis.userService.controllers;
 
-import com.pdiagnosis.userService.model.users.User;
+import com.pdiagnosis.User;
 import com.pdiagnosis.userService.services.UserService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;

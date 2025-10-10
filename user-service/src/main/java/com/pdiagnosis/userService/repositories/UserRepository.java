@@ -1,6 +1,7 @@
 package com.pdiagnosis.userService.repositories;
 
-import com.pdiagnosis.userService.model.users.User;
+
+import  com.pdiagnosis.User;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.Optional;

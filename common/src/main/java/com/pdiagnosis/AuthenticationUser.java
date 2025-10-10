@@ -1,4 +1,4 @@
-package com.pdiagnosis.authenticationService.model;
+package com.pdiagnosis;
 
 import jakarta.persistence.*;
 import lombok.*;

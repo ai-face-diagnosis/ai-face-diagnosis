@@ -1,6 +1,6 @@
 package com.pdiagnosis.userService.config;
 
-import com.pdiagnosis.userService.model.users.User;
+import com.pdiagnosis.User;
 import com.pdiagnosis.userService.repositories.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -20,8 +20,6 @@ public class CustomUserDetailsService implements UserDetailsService {
                 .orElseThrow(() -> new UsernameNotFoundException("User not found"));
         return org.springframework.security.core.userdetails.User.builder()
                 .username(user.getUsername())
-                .password(user.getPassword())
-                .roles(user.getRole().name())
                 .build();
     }
 }

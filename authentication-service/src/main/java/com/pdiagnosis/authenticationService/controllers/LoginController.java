@@ -1,7 +1,6 @@
 package com.pdiagnosis.authenticationService.controllers;
-
+import com.pdiagnosis.AuthenticationUser;
 import com.pdiagnosis.authenticationService.config.JwtTokenGenerator;
-import com.pdiagnosis.authenticationService.model.AuthenticationUser;
 import com.pdiagnosis.authenticationService.services.AuthenticationUserService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
