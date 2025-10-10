@@ -1,3 +1,10 @@
 fastapi
 uvicorn
+opencv-python-headless
+deepface
+mediapipe
+pillow
+torch
+torchvision
+numpy
 python-multipart
