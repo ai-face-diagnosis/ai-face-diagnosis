@@ -82,3 +82,5 @@ tmp/
 migrations/
 *.sql
 *.dump
+
+.png

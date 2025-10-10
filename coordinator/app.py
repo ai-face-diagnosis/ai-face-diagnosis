@@ -7,8 +7,8 @@ import json
 app = FastAPI(title="Coordination Microservice")
 
 # Assuming the URLs of the other microservices
-FACE_ANALYSIS_URL = "http://face-analysis-service/analyze"
-DISEASE_ANALYSIS_URL = "http://disease-analysis-service/analyze"
+FACE_ANALYSIS_URL = "http://face-analysis/analyze"
+DISEASE_ANALYSIS_URL = "http://disease-analysis/analyze"
 
 @app.post("/analyze")
 async def analyze_image(file: UploadFile = File(...)):
@@ -17,11 +17,12 @@ async def analyze_image(file: UploadFile = File(...)):
     filename = file.filename
     
     # Prepare files for requests
-    files = {"file": (filename, io.BytesIO(file_content), file.content_type)}
+    face_files = {"file": (filename, file_content, file.content_type)}
+    disease_files = {"file": (filename, file_content, file.content_type)}
     
     # Send to face analysis service
     try:
-        face_response = requests.post(FACE_ANALYSIS_URL, files=files)
+        face_response = requests.post(FACE_ANALYSIS_URL, files=face_files)
         face_response.raise_for_status()
         face_data = face_response.json()
     except requests.RequestException as e:
@@ -29,7 +30,7 @@ async def analyze_image(file: UploadFile = File(...)):
     
     # Send to disease analysis service
     try:
-        disease_response = requests.post(DISEASE_ANALYSIS_URL, files=files)
+        disease_response = requests.post(DISEASE_ANALYSIS_URL, files=disease_files)
         disease_response.raise_for_status()
         disease_data = disease_response.json()
     except requests.RequestException as e:
