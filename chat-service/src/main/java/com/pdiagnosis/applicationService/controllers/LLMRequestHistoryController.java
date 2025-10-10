@@ -23,7 +23,7 @@ public class LLMRequestHistoryController {
     /**
      * Получить все записи истории для конкретного чата
      */
-    @GetMapping
+    @GetMapping("/getAll")
     public ResponseEntity<List<LLMRequestHistory>> getAllHistory(@PathVariable Long chatId) {
         return chatService.findById(chatId)
                 .map(chat -> ResponseEntity.ok(llmRequestHistoryService.findByChat(chat)))
@@ -47,7 +47,7 @@ public class LLMRequestHistoryController {
     /**
      * Создать новую запись истории
      */
-    @PostMapping
+    @PostMapping("/create")
     public ResponseEntity<?> createHistory(@PathVariable Long chatId,
                                            @RequestBody LLMRequestHistory history) {
         Optional<Chat> chatOpt = chatService.findById(chatId);
@@ -64,7 +64,7 @@ public class LLMRequestHistoryController {
     /**
      * Обновить запись
      */
-    @PutMapping("/{id}")
+    @PutMapping("/update/{id}")
     public ResponseEntity<?> updateHistory(@PathVariable Long id,
                                            @RequestBody LLMRequestHistory updated) {
         Optional<LLMRequestHistory> existingOpt = llmRequestHistoryService.findById(id);
@@ -85,7 +85,7 @@ public class LLMRequestHistoryController {
     /**
      * Удалить запись
      */
-    @DeleteMapping("/{id}")
+    @DeleteMapping("/delete/{id}")
     public ResponseEntity<?> deleteHistory(@PathVariable Long id) {
         Optional<LLMRequestHistory> existingOpt = llmRequestHistoryService.findById(id);
         if (existingOpt.isEmpty()) {

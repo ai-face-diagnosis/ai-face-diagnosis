@@ -11,7 +11,7 @@ import java.util.List;
 import java.util.Optional;
 
 @RestController
-@RequestMapping("/api/users/{userId}/chats")
+@RequestMapping("/api/chats/{userId}")
 @RequiredArgsConstructor
 public class ChatController {
 
@@ -20,7 +20,7 @@ public class ChatController {
     /**
      * Получить все чаты пользователя
      */
-    @GetMapping
+    @GetMapping("/byUser")
     public ResponseEntity<List<Chat>> getChatsByUser(@PathVariable Long userId) {
         return ResponseEntity.ok(chatService.findByUserId(userId));
     }
@@ -28,7 +28,7 @@ public class ChatController {
     /**
      * Получить чат по ID
      */
-    @GetMapping("/{chatId}")
+    @GetMapping("/byId")
     public ResponseEntity<?> getChatById(@PathVariable Long userId, @PathVariable Long chatId) {
         Optional<Chat> chatOpt = chatService.findByIdAndUserId(chatId, userId);
         return chatOpt.<ResponseEntity<?>>map(ResponseEntity::ok)
@@ -38,7 +38,7 @@ public class ChatController {
     /**
      * Создать новый чат
      */
-    @PostMapping
+    @PostMapping("/create")
     public ResponseEntity<Chat> createChat(@PathVariable Long userId, @RequestBody Chat chat) {
         chat.setUserId(userId);
         return ResponseEntity.status(HttpStatus.CREATED).body(chatService.create(chat));
@@ -47,7 +47,7 @@ public class ChatController {
     /**
      * Обновить чат
      */
-    @PutMapping("/{chatId}")
+    @PutMapping("/update/{chatId}")
     public ResponseEntity<?> updateChat(@PathVariable Long userId,
                                         @PathVariable Long chatId,
                                         @RequestBody Chat updatedChat) {
@@ -64,7 +64,7 @@ public class ChatController {
     /**
      * Удалить чат
      */
-    @DeleteMapping("/{chatId}")
+    @DeleteMapping("/delete/{chatId}")
     public ResponseEntity<?> deleteChat(@PathVariable Long userId, @PathVariable Long chatId) {
         Optional<Chat> chatOpt = chatService.findByIdAndUserId(chatId, userId);
         if (chatOpt.isEmpty()) {

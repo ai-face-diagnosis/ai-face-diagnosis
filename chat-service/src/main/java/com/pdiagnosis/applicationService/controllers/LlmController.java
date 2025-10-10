@@ -73,20 +73,18 @@ public class LlmController {
      */
     @PostMapping(value = "/analyze", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<?> analyzeImage(
-            @RequestParam("file") MultipartFile file,
-            @RequestParam("prompt") String prompt
+            @RequestParam("file") MultipartFile file
+
     ) {
         try {
             if (file.isEmpty()) {
                 return ResponseEntity.badRequest().body(Map.of("error", "Missing 'file'"));
             }
-            if (prompt == null || prompt.isEmpty()) {
-                return ResponseEntity.badRequest().body(Map.of("error", "Missing 'prompt'"));
-            }
 
             // 👇 Пока просто шлём модельке текст с упоминанием, что было передано фото
-            String modelName = "llama-3.3-70b-versatile";
-            String fullPrompt = prompt + "\n(Изображение передано отдельно: " + file.getOriginalFilename() + ")";
+            String modelName = "meta-llama/llama-4-maverick-17b-128e-instruct";
+            String fullPrompt = "Analyze giving image and give an short answer whether " +
+                    " it's face or not.Answer ''" + "\n(Изображение передано отдельно: " + file.getOriginalFilename() + ")";
 
             List<Map<String, String>> messages = List.of(
                     Map.of("role", "system", "content", SYSTEM_PROMPT),
@@ -99,6 +97,46 @@ public class LlmController {
             return ResponseEntity.ok(Map.of(
                     "fileName", file.getOriginalFilename(),
                     "response", response
+            ));
+
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().body(Map.of("error", e.getMessage()));
+        }
+    }
+    /**
+     * 🎙 Метод для отправки аудиофайла и получения транскрипции.
+     * Принимает multipart/form-data с аудиофайлом.
+     *
+     * Пример запроса:
+     * POST /api/llm/transcribe
+     * Content-Type: multipart/form-data
+     *
+     * Параметры:
+     * - file: (аудиофайл)
+     */
+    @PostMapping(value = "/transcribe", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<?> transcribeAudio(
+            @RequestParam("file") MultipartFile file
+    ) {
+        try {
+            if (file.isEmpty()) {
+                return ResponseEntity.badRequest().body(Map.of("error", "Missing 'file'"));
+            }
+
+            // Формируем запрос для whisper-1
+            String modelName = "whisper-large-v3";
+            String prompt = "Транскрибируй аудиофайл: " + file.getOriginalFilename();
+
+            List<Map<String, String>> messages = List.of(
+                    Map.of("role", "system", "content", SYSTEM_PROMPT),
+                    Map.of("role", "user", "content", prompt)
+            );
+
+            String response = llmClient.sendChatCompletion(modelName, messages, Map.of());
+
+            return ResponseEntity.ok(Map.of(
+                    "fileName", file.getOriginalFilename(),
+                    "transcription", response
             ));
 
         } catch (Exception e) {

@@ -29,7 +29,7 @@ public class UserSettingsController {
     /**
      * Создать или обновить настройки пользователя
      */
-    @PostMapping
+    @PostMapping("/save")
     public ResponseEntity<?> saveUserSettings(@PathVariable Long userId,
                                               @RequestBody UserSettings newSettings) {
         newSettings.setUserId(userId);
@@ -52,7 +52,7 @@ public class UserSettingsController {
     /**
      * Удалить настройки пользователя
      */
-    @DeleteMapping
+    @DeleteMapping("/delete")
     public ResponseEntity<?> deleteUserSettings(@PathVariable Long userId) {
         Optional<UserSettings> settingsOpt = userSettingsService.findByUserId(userId);
         if (settingsOpt.isEmpty()) {
