@@ -1,0 +1,82 @@
+version: '3.9'
+
+services:
+  postgres:
+    image: postgres:15
+    container_name: pd-postgres
+    restart: always
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      POSTGRES_DB: ${DB_NAME:-pdiagnosis_app}
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+  authentication-service:
+    build:
+      context: ./authentication-service
+      dockerfile: Dockerfile
+    container_name: authentication-service
+    restart: always
+    env_file:
+      - ./authentication-service/.env
+    ports:
+      - "8080:8080"
+    depends_on:
+      - postgres
+
+  user-service:
+    build:
+      context: ./user-service
+      dockerfile: Dockerfile
+    container_name: user-service
+    restart: always
+    env_file:
+      - ./user-service/.env
+    ports:
+      - "8081:8081"
+    depends_on:
+      - postgres
+
+  chat-service:
+    build:
+      context: ./chat-service
+      dockerfile: Dockerfile
+    container_name: chat-service
+    restart: always
+    env_file:
+      - ./chat-service/.env
+    ports:
+      - "8082:8082"
+    depends_on:
+      - postgres
+
+  llm-service:
+    build:
+      context: ./llm-service
+      dockerfile: Dockerfile
+    container_name: llm-service
+    restart: always
+    env_file:
+      - ./llm-service/.env
+    ports:
+      - "8083:8083"
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: frontend
+    restart: always
+    ports:
+      - "3000:3000"
+    depends_on:
+      - authentication-service
+      - user-service
+      - chat-service
+      - llm-service
+
+volumes:
+  pgdata:
