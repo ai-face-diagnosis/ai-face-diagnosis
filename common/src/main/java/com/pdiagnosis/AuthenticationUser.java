@@ -33,13 +33,6 @@ public class AuthenticationUser {
     @Column(nullable = false)
     private LocalDateTime updatedAt = LocalDateTime.now();
 
-    /**
-     * ID пользователя из userService (другая база данных).
-     * Используется для связи на логическом уровне.
-     */
-    @Column(name = "user_id", nullable = false)
-    private Long userId;
-
     @PreUpdate
     protected void onUpdate() {
         this.updatedAt = LocalDateTime.now();

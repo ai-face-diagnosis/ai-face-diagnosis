@@ -1,6 +1,5 @@
 package com.pdiagnosis.applicationService.controllers;
 
-import com.pdiagnosis.applicationService.model.Chat;
 import com.pdiagnosis.applicationService.services.ChatService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -9,7 +8,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 import java.util.Optional;
-
+import com.pdiagnosis.Chat;
 @RestController
 @RequestMapping("/api/chats/{userId}")
 @RequiredArgsConstructor

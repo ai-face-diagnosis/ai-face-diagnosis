@@ -29,19 +29,26 @@ public class LoginController {
         public String password;
     }
 
-    // DTO для ответа с токеном
+    // DTO для ответа с токеном и id
     public static class LoginResponse {
-        public String token;
+        private String token;
+        private Long userId;
 
-        public LoginResponse(String token) {
+        public LoginResponse(String token, Long userId) {
             this.token = token;
-
+            this.userId = userId;
         }
+
+        public String getToken() { return token; }
+        public void setToken(String token) { this.token = token; }
+
+        public Long getUserId() { return userId; }
+        public void setUserId(Long userId) { this.userId = userId; }
     }
+
 
     @PostMapping("/login")
     public ResponseEntity<?> login(@RequestBody LoginRequest loginRequest) {
-        // Находим AuthenticationUser
         Optional<AuthenticationUser> authUserOpt =
                 authenticationUserService.findByUsername(loginRequest.username);
 
@@ -52,17 +59,17 @@ public class LoginController {
 
         AuthenticationUser authUser = authUserOpt.get();
 
-        // Проверка пароля
         if (!passwordEncoder.matches(loginRequest.password, authUser.getPassword())) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
                     .body("Invalid username or password");
         }
 
-        // Генерация JWT
         String token = jwtTokenGenerator.generateToken(authUser.getUsername());
 
-        return ResponseEntity.ok(new LoginResponse(token));
+        // Возвращаем токен и id пользователя
+        return ResponseEntity.ok(new LoginResponse(token, authUser.getId()));
     }
+
     @PostMapping("/register")
     public ResponseEntity<?> register(@RequestBody AuthenticationUser newUser) {
         if (authenticationUserService.existsByUsername(newUser.getUsername())) {

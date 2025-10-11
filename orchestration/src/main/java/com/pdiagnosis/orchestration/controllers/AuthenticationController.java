@@ -67,7 +67,7 @@ public class AuthenticationController {
     @PostMapping("/login")
     public ResponseEntity<?> login(@RequestBody LoginRequest loginRequest) {
         // Пересылка запроса логина в authentication-service
-        String authServiceUrl = "http://authentication-service:8080/api/auth/login";
+        String authServiceUrl = "http://localhost:8080/api/auth/login";
         ResponseEntity<LoginResponse> response = restTemplate.postForEntity(
                 authServiceUrl, loginRequest, LoginResponse.class);
 
@@ -87,7 +87,7 @@ public class AuthenticationController {
         authUser.setPassword(registerRequest.getPassword());
 
         // Регистрация в authentication-service
-        String authServiceUrl = "http://authentication-service:8080/api/auth/register";
+        String authServiceUrl = "http://localhost:8080/api/auth/register";
         ResponseEntity<AuthenticationUser> authResponse = restTemplate.postForEntity(
                 authServiceUrl, authUser, AuthenticationUser.class);
 
@@ -107,7 +107,7 @@ public class AuthenticationController {
             user.setGender(registerRequest.getGender());
             user.setActive(true); // Устанавливаем по умолчанию, как в модели User
 
-            String userServiceUrl = "http://user-service:8080/api/users/register";
+            String userServiceUrl = "http://localhost:8080/api/users/register";
             ResponseEntity<User> userResponse = restTemplate.postForEntity(
                     userServiceUrl, user, User.class);
 
@@ -116,7 +116,7 @@ public class AuthenticationController {
             } else {
                 // Откат регистрации в authentication-service
                 // В продакшене рекомендуется использовать распределенные транзакции
-                String deleteAuthUserUrl = "http://authentication-service:8080/api/auth/delete/" + registerRequest.getUsername();
+                String deleteAuthUserUrl = "http://localhost:8080/api/auth/delete/" + registerRequest.getUsername();
                 restTemplate.delete(deleteAuthUserUrl);
                 return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                         .body("Не удалось зарегистрировать пользователя в user-service");

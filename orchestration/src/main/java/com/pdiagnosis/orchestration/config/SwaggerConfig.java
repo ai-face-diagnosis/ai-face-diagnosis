@@ -20,7 +20,7 @@ public class SwaggerConfig {
                         .title("PDiagnosis Orchestration Service API")
                         .version("1.0")
                         .description("API for orchestrating interactions between authentication, chat, and user services"))
-                .addServersItem(new Server().url("http://localhost:8080").description("Orchestration Service"))
+                .addServersItem(new Server().url("http://localhost:8084").description("Orchestration Service"))
                 .addSecurityItem(new SecurityRequirement().addList("bearerAuth"))
                 .components(new Components()
                         .addSecuritySchemes("bearerAuth",

@@ -47,5 +47,4 @@ public class User {
     @Column(length = 10)
     private String gender; // "MALE", "FEMALE", "OTHER"
 
-
 }

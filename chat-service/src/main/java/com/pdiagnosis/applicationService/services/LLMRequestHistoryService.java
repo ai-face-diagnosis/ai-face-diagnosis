@@ -1,14 +1,13 @@
 package com.pdiagnosis.applicationService.services;
 
-import com.pdiagnosis.applicationService.model.Chat;
-import com.pdiagnosis.applicationService.model.LLMRequestHistory;
 import com.pdiagnosis.applicationService.repositories.LLMRequestHistoryRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
 import java.util.Optional;
-
+import com.pdiagnosis.Chat;
+import com.pdiagnosis.LLMRequestHistory;
 @Service
 @RequiredArgsConstructor
 public class LLMRequestHistoryService {
