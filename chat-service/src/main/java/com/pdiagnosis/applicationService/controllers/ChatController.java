@@ -10,7 +10,7 @@ import java.util.List;
 import java.util.Optional;
 import com.pdiagnosis.Chat;
 @RestController
-@RequestMapping("/api/chats/{userId}")
+@RequestMapping("/api/chats/chatController")
 @RequiredArgsConstructor
 public class ChatController {
 

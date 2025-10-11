@@ -103,6 +103,7 @@ public class ChatController {
 
 
     @GetMapping("/create")
+    @PostMapping("/create")
     public ResponseEntity<?> createChat(
             @RequestParam("userId") Long userId,
             @RequestParam("title") String title
@@ -113,11 +114,13 @@ public class ChatController {
             newChat.setUserId(userId);
             newChat.setTitle(title);
 
+            // Просто используем URL сервиса без {userId}
             ResponseEntity<Map> response = restTemplate.postForEntity(
-                    chatCreation.replace("{userId}", userId.toString()),
-                    newChat,
+                    chatCreation,  // URL без {userId}
+                    newChat,       // тело запроса
                     Map.class
             );
+
             if (response.getStatusCode() == HttpStatus.CREATED && response.getBody() != null) {
                 Long chatId = Long.valueOf(response.getBody().get("id").toString());
                 return ResponseEntity.status(HttpStatus.CREATED).body(Map.of("chatId", chatId));
@@ -129,6 +132,7 @@ public class ChatController {
                     .body(Map.of("error", "Error creating chat: " + e.getMessage()));
         }
     }
+
 
     private ResponseEntity<?> sendQuestion(MultipartFile imageFile, String prompt, Long chatId) {
         try {

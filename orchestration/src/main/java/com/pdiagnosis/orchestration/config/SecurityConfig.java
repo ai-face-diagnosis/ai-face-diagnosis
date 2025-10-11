@@ -39,7 +39,7 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(
                                 "/swagger-ui.html", "/swagger-ui/**", "/v3/api-docs/**",
-                                "/webjars/**", "/api/auth/**"
+                                "/webjars/**", "/api/auth/**", "/api/chat/**","/api/users/**","/api/chats/chatController/**"
                         ).permitAll()
                         .anyRequest().authenticated()
                 )
