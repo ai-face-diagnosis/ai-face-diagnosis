@@ -16,7 +16,7 @@ export default function ChatMessages({ messages }: ChatMessagesProps) {
 
   return (
     <div className={styles.chatMessages}>
-      {messages?.map((message) => (
+      {messages.map((message) => (
         <Message key={message.id} message={message} />
       ))}
       <div ref={messagesEndRef} />

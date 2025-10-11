@@ -4,13 +4,11 @@ import { useEffect, useState } from "react";
 
 interface Registration {
     setRegistration: (registration: number) => void;
-    onChatButtonClick: () => void;
-    accentColor: string;
-    setAccentColor: (accentColor: string) => void;
 }
 
-export default function Header({setRegistration, onChatButtonClick, accentColor, setAccentColor}: Registration) {
+export default function Header({setRegistration}: Registration) {
   const [isRegistered, setRegistered] = useState<boolean>(true)
+  const [accentColor, setAccentColor] = useState('#059669')
 const [isDark, setIsDark] = useState<number>(0);
 useEffect(() => {
   let theme = 'light'
@@ -39,7 +37,7 @@ useEffect(() => {
     <header className={styles.header}>
       <li className={styles.liLeft}>
       {isRegistered &&
-      <button className={styles.slidebar} onClick={() => onChatButtonClick()}>
+      <button className={styles.slidebar}>
       <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" fill={accentColor} viewBox="0 0 256 256"><path d="M216,40H40A16,16,0,0,0,24,56V200a16,16,0,0,0,16,16H216a16,16,0,0,0,16-16V56A16,16,0,0,0,216,40ZM40,56H80V200H40ZM216,200H96V56H216V200Z"></path></svg>
       </button>
       }
