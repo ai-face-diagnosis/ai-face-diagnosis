@@ -1,5 +1,6 @@
 package com.pdiagnosis;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -13,6 +14,7 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 @ToString(callSuper = true)
 public class User {
+    @JsonProperty(access = JsonProperty.Access.READ_ONLY)
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

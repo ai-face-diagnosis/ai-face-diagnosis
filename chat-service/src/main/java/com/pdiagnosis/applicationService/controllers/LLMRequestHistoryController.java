@@ -82,6 +82,7 @@ public class LLMRequestHistoryController {
     @PostMapping("/create")
     public ResponseEntity<?> createHistory(@PathVariable Long chatId,
                                            @RequestBody LLMRequestHistory history) {
+        history.setId(null);
         Optional<Chat> chatOpt = chatService.findById(chatId);
         if (chatOpt.isEmpty()) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND)

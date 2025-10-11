@@ -39,6 +39,7 @@ public class ChatController {
      */
     @PostMapping("/create")
     public ResponseEntity<Chat> createChat(@PathVariable Long userId, @RequestBody Chat chat) {
+        chat.setId(null);
         chat.setUserId(userId);
         return ResponseEntity.status(HttpStatus.CREATED).body(chatService.create(chat));
     }

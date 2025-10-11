@@ -1,4 +1,4 @@
-CREATE TABLE authentication_users (
+CREATE  TABLE if not exists authentication_users (
     id BIGSERIAL PRIMARY KEY,
     username VARCHAR(50) NOT NULL UNIQUE,
     password VARCHAR(255) NOT NULL,

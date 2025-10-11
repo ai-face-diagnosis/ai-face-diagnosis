@@ -45,6 +45,7 @@ public class AuthenticationUserController {
      */
     @PostMapping
     public ResponseEntity<AuthenticationUser> createUser(@RequestBody AuthenticationUser user) {
+        user.setId(null);
         AuthenticationUser createdUser = authenticationUserService.createUser(user);
         return ResponseEntity.status(HttpStatus.CREATED).body(createdUser);
     }
@@ -55,6 +56,7 @@ public class AuthenticationUserController {
     @PutMapping("/{id}")
     public ResponseEntity<?> updateUser(@PathVariable Long id,
                                         @RequestBody AuthenticationUser updatedUser) {
+        updatedUser.setId(null);
         Optional<AuthenticationUser> userOpt = authenticationUserService.findById(id);
         if (userOpt.isEmpty()) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body("User not found");

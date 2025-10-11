@@ -72,11 +72,12 @@ public class LoginController {
 
     @PostMapping("/register")
     public ResponseEntity<?> register(@RequestBody AuthenticationUser newUser) {
+
         if (authenticationUserService.existsByUsername(newUser.getUsername())) {
             return ResponseEntity.status(HttpStatus.CONFLICT)
                     .body("Username already exists");
         }
         AuthenticationUser created = authenticationUserService.createUser(newUser);
-        return ResponseEntity.status(HttpStatus.CREATED).body(created);
+        return ResponseEntity.ok().build();
     }
 }

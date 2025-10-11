@@ -97,7 +97,7 @@ public class AuthenticationController {
         }
 
         // Если пользователь успешно создан в authentication-service, регистрируем в user-service
-        if (authResponse.getStatusCode() == HttpStatus.CREATED) {
+        if (authResponse.getStatusCode() == HttpStatus.OK) {
             // Создаем User для user-service
             User user = new User();
             user.setUsername(registerRequest.getUsername());
@@ -107,7 +107,7 @@ public class AuthenticationController {
             user.setGender(registerRequest.getGender());
             user.setActive(true); // Устанавливаем по умолчанию, как в модели User
 
-            String userServiceUrl = "http://localhost:8080/api/users/register";
+            String userServiceUrl = "http://localhost:8081/api/users/register";
             ResponseEntity<User> userResponse = restTemplate.postForEntity(
                     userServiceUrl, user, User.class);
 

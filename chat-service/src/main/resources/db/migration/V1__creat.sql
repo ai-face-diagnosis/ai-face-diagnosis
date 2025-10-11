@@ -1,10 +1,10 @@
-CREATE TABLE chats (
+CREATE TABLE if not exists chats (
     id BIGSERIAL PRIMARY KEY,
     user_id BIGINT NOT NULL,
     title VARCHAR(255) NOT NULL,
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
-CREATE TABLE llm_request_history (
+CREATE TABLE if not exists llm_request_history (
     id BIGSERIAL PRIMARY KEY,
     request_time TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     llm_response TEXT NOT NULL,
