@@ -1,12 +1,33 @@
 version: '3.8'
+
 services:
   coordinator:
     build:
       context: ./coordinator
-      dockerfile: Dockerfile
     ports:
       - "8000:8000"
-    volumes:
-      - ./coordinator:/app
-    environment:
-      - PYTHONPATH=/app
+    depends_on:
+      - face-analysis
+      - disease-analysis
+    networks:
+      - health-net
+
+  disease-analysis:
+    build:
+      context: ./disease-analysis
+    # Порт 80 внутри контейнера — не нужно пробрасывать наружу, если только для отладки
+    # ports:
+    #   - "8081:80"
+    networks:
+      - health-net
+
+  face-analysis:
+    build:
+      context: ./face-analysis
+    # Аналогично — порт 80 внутри
+    networks:
+      - health-net
+
+networks:
+  health-net:
+    driver: bridge

@@ -81,5 +81,7 @@ tmp/
 *.db
 migrations/
 *.sql
+.png
+next-env.d.ts
 *.dump
 next-env.d.ts
