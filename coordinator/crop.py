@@ -7,7 +7,7 @@ mp_face_mesh = mp.solutions.face_mesh
 face_mesh = mp_face_mesh.FaceMesh(static_image_mode=True, max_num_faces=1, refine_landmarks=True)
 padding = 5
 
-def detect_face_and_crop(image: np.ndarray, region: str = 'face') -> np.ndarray:
+async def detect_face_and_crop(image: np.ndarray, region: str = 'face') -> np.ndarray:
     
     rgb_image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
     results = face_mesh.process(rgb_image)

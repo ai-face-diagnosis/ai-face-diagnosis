@@ -8,7 +8,7 @@ from tensorflow.keras.utils import img_to_array
 from PIL import Image
 import numpy as np
 import io
-import traceback  # ← добавили
+import traceback
 
 app = FastAPI()
 
@@ -20,15 +20,12 @@ model = None
 def load_skin_model():
     global model
     if not os.path.exists(MODEL_FILE):
-        print("Downloading model from Hugging Face...")
         snapshot_download(repo_id="Tanishq77/skin-condition-classifier", local_dir=MODEL_DIR)
     
     if not os.path.exists(MODEL_FILE):
         raise RuntimeError("Model file not found after download.")
     
-    print("Loading model...")
     model = load_model(MODEL_FILE)
-    print("Model loaded successfully!")
 
 # Загружаем модель при запуске
 load_skin_model()
@@ -40,34 +37,31 @@ async def analyze_image(file: UploadFile = File(...)):
         if not file_content:
             raise ValueError("Empty file received")
 
-        # Отладка: тип и размер
-        print(f"📄 Received file: {file.filename}, size: {len(file_content)} bytes")
-
-        # Открытие и конвертация
         img = Image.open(io.BytesIO(file_content)).convert('RGB')
-        print(f"🖼️  Image mode: {img.mode}, size: {img.size}")
-
         img = img.resize((224, 224))
         img_array = img_to_array(img)
-        print(f"📊 Array shape before expand: {img_array.shape}")
-
         img_array = np.expand_dims(img_array, axis=0)
         img_array = preprocess_input(img_array)
-        print(f"📤 Input shape for model: {img_array.shape}")
 
         predictions = model.predict(img_array, verbose=0)
+        max_prob = np.max(predictions)
         predicted_class = CLASSES[np.argmax(predictions)]
-        confidence = np.max(predictions) * 100
+        confidence = max_prob * 100
         probabilities = {cls: float(prob * 100) for cls, prob in zip(CLASSES, predictions[0])}
 
-        return {
-            "condition": predicted_class,
-            "confidence": float(confidence),
-            "probabilities": probabilities
-        }
+        # Если ни одно заболевание не превышает 50% уверенности — считаем кожу здоровой
+        if max_prob < 0.5:
+            return {
+                "condition": "Healthy skin",
+                "confidence": float((1 - max_prob) * 100),  # Уверенность в здоровье = 100% - max(болезнь)
+                "probabilities": probabilities
+            }
+        else:
+            return {
+                "condition": predicted_class,
+                "confidence": float(confidence),
+                "probabilities": probabilities
+            }
 
     except Exception as e:
-        # 🔥 КРИТИЧЕСКИ ВАЖНО: вывести ошибку в лог
-        print("💥 EXCEPTION in disease-analysis:")
-        print(traceback.format_exc())
         raise HTTPException(status_code=500, detail=f"Processing failed: {str(e)}")
