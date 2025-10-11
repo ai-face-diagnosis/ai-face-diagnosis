@@ -18,7 +18,7 @@ import java.util.List;
 import java.util.Optional;
 import com.pdiagnosis.Chat;
 @RestController
-@RequestMapping("/api/chats/{chatId}/history")
+@RequestMapping("/api/chats/history")
 @RequiredArgsConstructor
 public class LLMRequestHistoryController {
 
@@ -29,7 +29,7 @@ public class LLMRequestHistoryController {
      * Получить все записи истории для конкретного чата
      */
     @GetMapping("/getAll")
-    public ResponseEntity<List<LLMRequestHistory>> getAllHistory(@PathVariable Long chatId) {
+    public ResponseEntity<List<LLMRequestHistory>> getAllHistory(@RequestParam Long chatId) {
         return chatService.findById(chatId)
                 .map(chat -> ResponseEntity.ok(llmRequestHistoryService.findByChat(chat)))
                 .orElse(ResponseEntity.notFound().build());

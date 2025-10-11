@@ -3,6 +3,7 @@ package com.pdiagnosis.orchestration.controllers;
 import com.pdiagnosis.Chat;
 import com.pdiagnosis.orchestration.MultipartInputStreamFileResource;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.*;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
@@ -74,31 +75,89 @@ public class ChatController {
     @GetMapping("/list")
     public ResponseEntity<?> getChatList(@RequestParam("userId") Long userId) {
         try {
-            // Запрос к сервису для получения списка чатов пользователя
-            String url = chatGetter.replace("{userId}", userId.toString());
-            ResponseEntity<List> response = restTemplate.getForEntity(url, List.class);
-            if (response.getStatusCode() == HttpStatus.OK) {
+            // Формируем URL к chat-service
+            String url = chatGetter + "?userId=" + userId;
+
+            // Типизированный запрос — RestTemplate должен знать, что мы получаем List<Chat>
+            ResponseEntity<List<Map<String, Object>>> response = restTemplate.exchange(
+                    url,
+                    HttpMethod.GET,
+                    null,
+                    new ParameterizedTypeReference<>() {}
+            );
+
+            // Проверяем успешность
+            if (response.getStatusCode().is2xxSuccessful() && response.getBody() != null) {
                 return ResponseEntity.ok(response.getBody());
             }
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("error", "No chats found for user"));
+
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(Map.of("error", "No chats found for userId " + userId));
         } catch (Exception e) {
-            return ResponseEntity.internalServerError().body(Map.of("error", e.getMessage()));
+            return ResponseEntity.internalServerError()
+                    .body(Map.of("error", "Failed to fetch chats: " + e.getMessage()));
         }
     }
+
 
     @GetMapping("/{chatId}")
     public ResponseEntity<?> getChatHistory(@PathVariable Long chatId) {
         try {
-            String historyServiceUrl = "http://llm-history-service/api/chats/" + chatId + "/history/getAllWithImages";
-            ResponseEntity<String> response = restTemplate.getForEntity(historyServiceUrl, String.class);
-            return ResponseEntity.status(response.getStatusCode()).body(response.getBody());
+            // 1️⃣ Формируем URL сервиса истории (applicationService)
+            String historyServiceUrl = chatHistoryGetter + "/getAll?chatId=" + chatId;
+
+            // 2️⃣ Запрос к сервису истории
+            ResponseEntity<List<Map<String, Object>>> response = restTemplate.exchange(
+                    historyServiceUrl,
+                    HttpMethod.GET,
+                    null,
+                    new ParameterizedTypeReference<>() {}
+            );
+
+            if (!response.getStatusCode().is2xxSuccessful() || response.getBody() == null) {
+                return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                        .body(Map.of("error", "No history found for chatId " + chatId));
+            }
+
+            List<Map<String, Object>> rawHistory = response.getBody();
+
+            // 3️⃣ Преобразуем записи истории, подгружая изображения в Base64
+            List<Map<String, Object>> historyWithImages = rawHistory.stream().map(entry -> {
+                Map<String, Object> map = new HashMap<>();
+                map.put("id", entry.get("id"));
+                map.put("chatId", entry.get("chat") != null ? ((Map<?, ?>) entry.get("chat")).get("id") : null);
+                map.put("requestTime", entry.get("requestTime"));
+                map.put("llmResponse", entry.get("llmResponse"));
+
+                String imageUrl = (String) entry.get("imageUrl");
+                if (imageUrl != null && !imageUrl.isEmpty()) {
+                    try {
+                        Path filePath = Paths.get("src/main/resources/photo", Paths.get(imageUrl).getFileName().toString());
+                        if (Files.exists(filePath)) {
+                            byte[] bytes = Files.readAllBytes(filePath);
+                            String base64 = Base64.getEncoder().encodeToString(bytes);
+                            map.put("imageBase64", base64);
+                            map.put("imageUrl", "/api/chats/history/image?imageUrl=" + imageUrl);
+                        }
+                    } catch (Exception e) {
+                        map.put("imageBase64", null);
+                    }
+                } else {
+                    map.put("imageBase64", null);
+                }
+
+                return map;
+            }).toList();
+
+            return ResponseEntity.ok(historyWithImages);
+
         } catch (Exception e) {
-            // Логируем ошибку и возвращаем 500
             System.err.println("Error fetching chat history: " + e.getMessage());
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(Map.of("error", "Failed to fetch chat history: " + e.getMessage()));
         }
     }
+
 
 
 

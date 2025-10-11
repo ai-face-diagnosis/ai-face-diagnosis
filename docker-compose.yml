@@ -14,6 +14,17 @@ services:
     volumes:
       - pgdata:/var/lib/postgresql/data
 
+  common-service:
+    build:
+      context: ./common
+      dockerfile: Dockerfile
+    container_name: common-service
+    restart: always
+    env_file:
+      - ./common/.env
+    depends_on:
+      - postgres
+
   authentication-service:
     build:
       context: ./authentication-service
@@ -26,6 +37,7 @@ services:
       - "8080:8080"
     depends_on:
       - postgres
+      - common-service
 
   user-service:
     build:
@@ -39,6 +51,7 @@ services:
       - "8081:8081"
     depends_on:
       - postgres
+      - common-service
 
   chat-service:
     build:
@@ -52,31 +65,24 @@ services:
       - "8082:8082"
     depends_on:
       - postgres
+      - common-service
 
-  llm-service:
+  orchestration:
     build:
-      context: ./llm-service
+      context: ./orchestration
       dockerfile: Dockerfile
-    container_name: llm-service
+    container_name: orchestration
     restart: always
     env_file:
-      - ./llm-service/.env
+      - ./orchestration/.env
     ports:
-      - "8083:8083"
-
-  frontend:
-    build:
-      context: ./frontend
-      dockerfile: Dockerfile
-    container_name: frontend
-    restart: always
-    ports:
-      - "3000:3000"
+      - "8084:8084"
     depends_on:
       - authentication-service
       - user-service
       - chat-service
-      - llm-service
+      - common-service
 
 volumes:
   pgdata:
+
