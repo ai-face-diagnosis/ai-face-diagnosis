@@ -27,18 +27,24 @@ public class AuthenticationController {
         public void setPassword(String password) { this.password = password; }
     }
 
-    // DTO для ответа логина
     public static class LoginResponse {
-        public String token;
+        private String token;
+        private Long userId;
 
-        public LoginResponse(String token) {
+        public LoginResponse() {} // нужен для Jackson
+
+        public LoginResponse(String token, Long userId) {
             this.token = token;
+            this.userId = userId;
         }
 
-        // Геттеры и сеттеры
         public String getToken() { return token; }
         public void setToken(String token) { this.token = token; }
+
+        public Long getUserId() { return userId; }
+        public void setUserId(Long userId) { this.userId = userId; }
     }
+
 
     // DTO для запроса регистрации
     public static class RegisterRequest {
