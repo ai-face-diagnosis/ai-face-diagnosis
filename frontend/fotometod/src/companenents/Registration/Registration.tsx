@@ -1,6 +1,9 @@
+// Registration.tsx
 'use client'
-import { useActionState, useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { maxLength, minLength, pipe, string, trim, email } from 'valibot'
+import { useRegistration } from '@/hooks/useRegistration'
+
 import styles from './Registration.module.css'
 
 const passwordSchema = pipe(
@@ -23,78 +26,23 @@ const emailSchema = pipe(
   email('Введите корректный email адрес')
 )
 
-interface Registration {
+interface RegistrationProps {
   registration: number;
   setRegistration: (registration: number) => void;
 }
 
-async function registrationAction(prevState: any, formData: FormData) {
-  const login = formData.get('login') as string
-  const email = formData.get('email') as string
-  const password = formData.get('password') as string
-  
-  // Валидация email
-  try {
-    emailSchema.parse(email)
-  } catch (error: any) {
-    return { 
-      success: false, 
-      error: 'Проверьте правильность введенных данных',
-      fieldErrors: { email: 'Введите корректный email адрес' }
-    }
-  }
-  
-  // Валидация логина
-  try {
-    loginSchema.parse(login)
-  } catch (error: any) {
-    return { 
-      success: false, 
-      error: 'Проверьте правильность введенных данных',
-      fieldErrors: { login: error.message }
-    }
-  }
-  
-  // Валидация пароля
-  try {
-    passwordSchema.parse(password)
-  } catch (error: any) {
-    return { 
-      success: false, 
-      error: 'Проверьте правильность введенных данных',
-      fieldErrors: { password: error.message }
-    }
-  }
-  
-  // Имитация проверки существующего пользователя
-  if (login === 'existinguser') {
-    return { 
-      success: false, 
-      error: 'Такой пользователь уже существует',
-      fieldErrors: { login: 'Такой пользователь уже существует' }
-    }
-  }
-  
-  // Имитация проверки существующего email
-  if (email === 'existing@email.com') {
-    return { 
-      success: false, 
-      error: 'Этот email уже используется',
-      fieldErrors: { email: 'Этот email уже используется' }
-    }
-  }
-  
-  return { success: true, error: null, fieldErrors: {} }
-}
-
-export default function Registration({ registration, setRegistration }: Registration) {
-  const [state, action, isPending] = useActionState(registrationAction, {
-    success: false,
-    error: null,
-    fieldErrors: {}
-  })
-
+export default function Registration({ registration, setRegistration }: RegistrationProps) {
+  const { register, isLoading, error, success, reset } = useRegistration()
+  const [fieldErrors, setFieldErrors] = useState<{ [key: string]: string }>({})
   const modalRef = useRef<HTMLDivElement>(null)
+
+  // Сброс состояния при открытии модалки
+  useEffect(() => {
+    if (registration === 1) {
+      reset()
+      setFieldErrors({})
+    }
+  }, [registration]) // Убрали reset из зависимостей, так как он теперь стабилен
 
   // Закрытие по ESC
   useEffect(() => {
@@ -119,6 +67,55 @@ export default function Registration({ registration, setRegistration }: Registra
     setRegistration(2)
   }
 
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault()
+    setFieldErrors({})
+    
+    const formData = new FormData(e.currentTarget)
+    const login = formData.get('login') as string
+    const email = formData.get('email') as string
+    const password = formData.get('password') as string
+
+    // Валидация на клиенте
+    const errors: { [key: string]: string } = {}
+
+    try {
+      emailSchema.parse(email)
+    } catch (error: any) {
+      errors.email = 'Введите корректный email адрес'
+    }
+
+    try {
+      loginSchema.parse(login)
+    } catch (error: any) {
+      errors.login = error.message
+    }
+
+    try {
+      passwordSchema.parse(password)
+    } catch (error: any) {
+      errors.password = error.message
+    }
+
+    if (Object.keys(errors).length > 0) {
+      setFieldErrors(errors)
+      return
+    }
+
+    // Отправка на сервер
+    const result = await register({ login, email, password })
+    
+    if (result.fieldErrors) {
+      setFieldErrors(result.fieldErrors)
+    }
+
+    if (result.success) {
+      setTimeout(() => {
+        setRegistration(0)
+      }, 2000)
+    }
+  }
+
   return (
     <section 
       className={registration === 1 ? styles.modalVisible : styles.modalUnvisible}
@@ -126,7 +123,7 @@ export default function Registration({ registration, setRegistration }: Registra
       ref={modalRef}
     >
       <div className={styles.modalContent}>
-        <form action={action} className={styles.registrationForm}>
+        <form onSubmit={handleSubmit} className={styles.registrationForm}>
           <div className={styles.formHeader}>
             <h2>Регистрация</h2>
             <button 
@@ -150,8 +147,8 @@ export default function Registration({ registration, setRegistration }: Registra
               minLength={5}
               maxLength={20}
             />
-            {state.fieldErrors?.login && (
-              <span className={styles.errorText}>{state.fieldErrors.login}</span>
+            {fieldErrors.login && (
+              <span className={styles.errorText}>{fieldErrors.login}</span>
             )}
           </div>
 
@@ -164,8 +161,8 @@ export default function Registration({ registration, setRegistration }: Registra
               placeholder="example@gmail.com"
               required
             />
-            {state.fieldErrors?.email && (
-              <span className={styles.errorText}>{state.fieldErrors.email}</span>
+            {fieldErrors.email && (
+              <span className={styles.errorText}>{fieldErrors.email}</span>
             )}
           </div>
 
@@ -180,21 +177,27 @@ export default function Registration({ registration, setRegistration }: Registra
               minLength={6}
               maxLength={30}
             />
-            {state.fieldErrors?.password && (
-              <span className={styles.errorText}>{state.fieldErrors.password}</span>
+            {fieldErrors.password && (
+              <span className={styles.errorText}>{fieldErrors.password}</span>
             )}
           </div>
 
-          {state.error && !state.fieldErrors?.login && !state.fieldErrors?.email && !state.fieldErrors?.password && (
-            <div className={styles.formError}>{state.error}</div>
+          {error && !fieldErrors.login && !fieldErrors.email && !fieldErrors.password && (
+            <div className={styles.formError}>{error}</div>
+          )}
+
+          {success && (
+            <div className={styles.successMessage}>
+              Регистрация прошла успешно! Вы будете перенаправлены...
+            </div>
           )}
 
           <button 
             type="submit" 
             className={styles.submitButton}
-            disabled={isPending}
+            disabled={isLoading}
           >
-            {isPending ? 'Регистрация...' : 'Зарегистрироваться'}
+            {isLoading ? 'Регистрация...' : 'Зарегистрироваться'}
           </button>
 
           <div className={styles.loginSwitch}>

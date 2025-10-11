@@ -51,9 +51,9 @@ public class AuthenticationController {
         public String username;
         public String password;
         public String email;
-        public String fullName;
-        public Integer age;
-        public String gender; // "MALE", "FEMALE", "OTHER"
+//        public String fullName;
+//        public Integer age;
+//        public String gender; // "MALE", "FEMALE", "OTHER"
 
         // Геттеры и сеттеры
         public String getUsername() { return username; }
@@ -62,12 +62,12 @@ public class AuthenticationController {
         public void setPassword(String password) { this.password = password; }
         public String getEmail() { return email; }
         public void setEmail(String email) { this.email = email; }
-        public String getFullName() { return fullName; }
-        public void setFullName(String fullName) { this.fullName = fullName; }
-        public Integer getAge() { return age; }
-        public void setAge(Integer age) { this.age = age; }
-        public String getGender() { return gender; }
-        public void setGender(String gender) { this.gender = gender; }
+//        public String getFullName() { return fullName; }
+//        public void setFullName(String fullName) { this.fullName = fullName; }
+//        public Integer getAge() { return age; }
+//        public void setAge(Integer age) { this.age = age; }
+//        public String getGender() { return gender; }
+//        public void setGender(String gender) { this.gender = gender; }
     }
 
     @PostMapping("/login")
@@ -108,9 +108,9 @@ public class AuthenticationController {
             User user = new User();
             user.setUsername(registerRequest.getUsername());
             user.setEmail(registerRequest.getEmail());
-            user.setFullName(registerRequest.getFullName());
-            user.setAge(registerRequest.getAge());
-            user.setGender(registerRequest.getGender());
+//            user.setFullName(registerRequest.getFullName());
+//            user.setAge(registerRequest.getAge());
+//            user.setGender(registerRequest.getGender());
             user.setActive(true); // Устанавливаем по умолчанию, как в модели User
 
             String userServiceUrl = "http://localhost:8081/api/users/register";

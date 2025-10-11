@@ -78,37 +78,49 @@ public class LlmController {
      * - prompt: "Опиши состояние кожи на фото"
      */
     @PostMapping(value = "/analyze", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    public ResponseEntity<?> analyzeImage(
-            @RequestParam("file") MultipartFile file
-
-    ) {
+    public ResponseEntity<?> analyzeImage(@RequestParam("file") MultipartFile file) {
         try {
             if (file.isEmpty()) {
                 return ResponseEntity.badRequest().body(Map.of("error", "Missing 'file'"));
             }
 
-            // 👇 Пока просто шлём модельке текст с упоминанием, что было передано фото
-            String modelName = "meta-llama/llama-4-maverick-17b-128e-instruct";
-            String fullPrompt = "Analyze giving image and give an short answer whether " +
-                    " it's face or not.Answer ''" + "\n(Изображение передано отдельно: " + file.getOriginalFilename() + ")";
+            // Конвертируем изображение в Base64
+            String base64Image = Base64.getEncoder().encodeToString(file.getBytes());
+            String imageData = "data:image/jpeg;base64," + base64Image;
 
-            List<Map<String, String>> messages = List.of(
-                    Map.of("role", "system", "content", SYSTEM_PROMPT),
-                    Map.of("role", "user", "content", fullPrompt)
+            // Формируем JSON для Groq API
+            Map<String, Object> requestBody = Map.of(
+                    "model", "meta-llama/llama-4-maverick-17b-128e-instruct",
+                    "messages", List.of(
+                            Map.of(
+                                    "role", "user",
+                                    "content", List.of(
+                                            Map.of("type", "text", "text", "Есть ли человеческое лицо на изображении"),
+                                            Map.of("type", "image_url", "image_url", Map.of("url", imageData))
+                                    )
+                            )
+                    )
             );
 
-            String response = llmClient.sendChatCompletion(modelName, messages, Map.of());
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.APPLICATION_JSON);
+            headers.setBearerAuth(key); // Используем сам ключ, без getenv
 
-            // ⚠️ Здесь можно будет позже добавить анализ изображения через vision-модель
-            return ResponseEntity.ok(Map.of(
-                    "fileName", file.getOriginalFilename(),
-                    "response", response
-            ));
+            HttpEntity<Map<String, Object>> request = new HttpEntity<>(requestBody, headers);
+
+            ResponseEntity<Map> groqResponse = restTemplate.postForEntity(
+                    "https://api.groq.com/openai/v1/chat/completions",
+                    request,
+                    Map.class
+            );
+
+            return ResponseEntity.status(groqResponse.getStatusCode()).body(groqResponse.getBody());
 
         } catch (Exception e) {
             return ResponseEntity.internalServerError().body(Map.of("error", e.getMessage()));
         }
     }
+
     /**
      * 🎙 Метод для отправки аудиофайла и получения транскрипции.
      * Принимает multipart/form-data с аудиофайлом.

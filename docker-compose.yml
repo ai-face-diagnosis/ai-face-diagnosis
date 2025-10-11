@@ -1,88 +1,24 @@
-version: '3.9'
-
-services:
-  postgres:
-    image: postgres:15
-    container_name: pd-postgres
-    restart: always
-    environment:
-      POSTGRES_USER: ${POSTGRES_USER:-postgres}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
-      POSTGRES_DB: ${DB_NAME:-pdiagnosis_app}
+services:  coordinator:
+    build: ./coordinator
     ports:
-      - "5432:5432"
-    volumes:
-      - pgdata:/var/lib/postgresql/data
-
-  common-service:
-    build:
-      context: ./common
-      dockerfile: Dockerfile
-    container_name: common-service
-    restart: always
-    env_file:
-      - ./common/.env
+      - "8000:8000"
     depends_on:
-      - postgres
+      - face-analysis
+      - disease-analysis
+    networks:
+      - health-net
 
-  authentication-service:
-    build:
-      context: ./authentication-service
-      dockerfile: Dockerfile
-    container_name: authentication-service
-    restart: always
-    env_file:
-      - ./authentication-service/.env
-    ports:
-      - "8080:8080"
-    depends_on:
-      - postgres
-      - common-service
+  disease-analysis:
+    build: ./disease-analysis
+    networks:
+      - health-net
 
-  user-service:
-    build:
-      context: ./user-service
-      dockerfile: Dockerfile
-    container_name: user-service
-    restart: always
-    env_file:
-      - ./user-service/.env
-    ports:
-      - "8081:8081"
-    depends_on:
-      - postgres
-      - common-service
+  face-analysis:
+    build: ./face-analysis
+    networks:
+      - health-net
 
-  chat-service:
-    build:
-      context: ./chat-service
-      dockerfile: Dockerfile
-    container_name: chat-service
-    restart: always
-    env_file:
-      - ./chat-service/.env
-    ports:
-      - "8082:8082"
-    depends_on:
-      - postgres
-      - common-service
-
-  orchestration:
-    build:
-      context: ./orchestration
-      dockerfile: Dockerfile
-    container_name: orchestration
-    restart: always
-    env_file:
-      - ./orchestration/.env
-    ports:
-      - "8084:8084"
-    depends_on:
-      - authentication-service
-      - user-service
-      - chat-service
-      - common-service
-
-volumes:
-  pgdata:
+networks:
+  health-net:
+    driver: bridge
 

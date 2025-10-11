@@ -233,7 +233,7 @@ public class ChatController {
     }
 
     private boolean checkFaceOnImage(MultipartFile file) {
-        return true;
+//
 //        try {
 //            HttpHeaders headers = new HttpHeaders();
 //            headers.setContentType(MediaType.MULTIPART_FORM_DATA);
@@ -247,6 +247,7 @@ public class ChatController {
 //        } catch (Exception e) {
 //            return false;
 //        }
+        return true;
     }
 
     private String sendToFastApiLLM(MultipartFile file) {

@@ -26,9 +26,6 @@ public class User {
     @Column(nullable = false, unique = true, length = 100)
     private String email;
 
-    @Column(length = 100)
-    private String fullName;
-
     @Column(nullable = false)
     private boolean active = true;
 
@@ -43,10 +40,6 @@ public class User {
         this.updatedAt = LocalDateTime.now();
     }
 
-    @Column
-    private Integer age;
 
-    @Column(length = 10)
-    private String gender; // "MALE", "FEMALE", "OTHER"
 
 }
