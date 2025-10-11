@@ -3,6 +3,9 @@ from fastapi.responses import JSONResponse
 import requests
 import io
 import json
+import cv2
+import numpy as np
+from crop import detect_face_and_crop
 
 app = FastAPI(title="Coordination Microservice")
 
@@ -15,11 +18,24 @@ async def analyze_image(file: UploadFile = File(...)):
     # Read the file content
     file_content = await file.read()
     filename = file.filename
-    
+    image = cv2.imdecode(np.frombuffer(file_content, np.uint8), cv2.IMREAD_COLOR)
     # Prepare files for requests
-    face_files = {"file": (filename, file_content, file.content_type)}
-    disease_files = {"file": (filename, file_content, file.content_type)}
+
     
+    try:
+        face_bytes = detect_face_and_crop(image,region='face')
+        left_eye_bytes = detect_face_and_crop(image,region='left_eye')
+        right_eye_bytes = detect_face_and_crop(image,region='right_eye')
+    except Exception as e:
+        return JSONResponse(status_code=500, content={"error": f"Cropping failed: {str(e)}"})
+    
+    face_files = {
+    "face": (f"face.jpg", face_bytes, "image/jpeg"),
+    "left_eye": (f"left_eye.jpg", left_eye_bytes, "image/jpeg"),
+    "right_eye": (f"right_eye.jpg", right_eye_bytes, "image/jpeg"),
+}
+    disease_files = {"file": (filename, file_content, file.content_type)}
+
     # Send to face analysis service
     try:
         face_response = requests.post(FACE_ANALYSIS_URL, files=face_files)
@@ -28,15 +44,15 @@ async def analyze_image(file: UploadFile = File(...)):
     except requests.RequestException as e:
         return JSONResponse(status_code=500, content={"error": f"Face analysis failed: {str(e)}"})
     
-    # Send to disease analysis service
-    try:
-        disease_response = requests.post(DISEASE_ANALYSIS_URL, files=disease_files)
-        disease_response.raise_for_status()
-        disease_data = disease_response.json()
-    except requests.RequestException as e:
-        return JSONResponse(status_code=500, content={"error": f"Disease analysis failed: {str(e)}"})
+    # # Send to disease analysis service
+    # try:
+    #     disease_response = requests.post(DISEASE_ANALYSIS_URL, files=disease_files)
+    #     disease_response.raise_for_status()
+    #     disease_data = disease_response.json()
+    # except requests.RequestException as e:
+    #     return JSONResponse(status_code=500, content={"error": f"Disease analysis failed: {str(e)}"})
     
     # Merge the two JSONs
-    merged_data = {**face_data, **disease_data}
+    merged_data = {**face_data}
     
     return JSONResponse(content=merged_data)
