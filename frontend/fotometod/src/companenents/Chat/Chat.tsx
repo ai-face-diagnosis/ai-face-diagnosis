@@ -7,32 +7,38 @@ import styles from './Chat.module.css'
 
 interface ChatProps {
   initialMessages?: MessageType[]
-  onSendMessage?: (text: string, image?: File) => void
+  onSendMessage?: (text: string, image?: File, audio?: Blob) => void
+  accentColor: string
 }
 
-export default function Chat({ initialMessages = [], onSendMessage }: ChatProps) {
+export default function Chat({ initialMessages = [], onSendMessage, accentColor }: ChatProps) {
   const [messages, setMessages] = useState<MessageType[]>(initialMessages)
 
-  const handleSendMessage = (text: string, image?: File) => {
-    const newMessage: MessageType = {
-      id: Date.now().toString(),
-      text,
-      isOwn: true,
-      timestamp: new Date(),
-      image: image ? URL.createObjectURL(image) : undefined
-    }
-
-    setMessages(prev => [...prev, newMessage])
-    
-    if (onSendMessage) {
-      onSendMessage(text, image)
-    }
+  const handleSendMessage = (text: string, image?: File, audio?: Blob) => {
+  let audioUrl: string | undefined
+  if (audio) {
+    audioUrl = URL.createObjectURL(audio)
   }
 
+  const newMessage: MessageType = {
+    id: Date.now().toString(),
+    text: audio ? '' : text,
+    isOwn: true,
+    timestamp: new Date(),
+    image: image ? URL.createObjectURL(image) : undefined,
+    audio: audioUrl
+  }
+
+  setMessages(prev => [...prev, newMessage])
+  
+  if (onSendMessage) {
+    onSendMessage(audio ? '' : text, image, audio)
+  }
+}
   return (
     <div className={styles.chatContainer}>
       <ChatMessages messages={messages} />
-      <ChatInput onSendMessage={handleSendMessage} />
+      <ChatInput onSendMessage={handleSendMessage} accentColor={accentColor} />
     </div>
   )
 }
