@@ -2,8 +2,12 @@ package com.pdiagnosis.applicationService.controllers;
 
 import com.pdiagnosis.applicationService.model.GroqLlmClient;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.*;
+import org.springframework.util.LinkedMultiValueMap;
+import org.springframework.util.MultiValueMap;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.client.RestTemplate;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.util.*;
@@ -13,7 +17,9 @@ import java.util.*;
 public class LlmController {
 
     private final GroqLlmClient llmClient;
-
+    @Value("${llm.groq.api-key}")
+    String key;
+    private final RestTemplate restTemplate = new RestTemplate();
     @Autowired
     public LlmController(GroqLlmClient llmClient) {
         this.llmClient = llmClient;
@@ -115,32 +121,39 @@ public class LlmController {
      * - file: (аудиофайл)
      */
     @PostMapping(value = "/transcribe", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    public ResponseEntity<?> transcribeAudio(
-            @RequestParam("file") MultipartFile file
-    ) {
+    public ResponseEntity<?> transcribeAudio(@RequestParam("file") MultipartFile file) {
         try {
             if (file.isEmpty()) {
                 return ResponseEntity.badRequest().body(Map.of("error", "Missing 'file'"));
             }
 
-            // Формируем запрос для whisper-1
-            String modelName = "whisper-large-v3";
-            String prompt = "Транскрибируй аудиофайл: " + file.getOriginalFilename();
+            String url = "https://api.groq.com/openai/v1/audio/transcriptions";
+            String modelName = "whisper-large-v3-turbo";
 
-            List<Map<String, String>> messages = List.of(
-                    Map.of("role", "system", "content", SYSTEM_PROMPT),
-                    Map.of("role", "user", "content", prompt)
-            );
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.MULTIPART_FORM_DATA);
+            headers.setBearerAuth(key);  // твой ключ
 
-            String response = llmClient.sendChatCompletion(modelName, messages, Map.of());
+            MultiValueMap<String, Object> body = new LinkedMultiValueMap<>();
+            body.add("file", new MultipartInputStreamFileResource(file.getInputStream(), file.getOriginalFilename()));
+            body.add("model", modelName);
+            body.add("temperature", "0");
+            body.add("response_format", "verbose_json");
+
+            HttpEntity<MultiValueMap<String, Object>> request = new HttpEntity<>(body, headers);
+
+            RestTemplate restTemplate = new RestTemplate();
+            ResponseEntity<Map> response = restTemplate.postForEntity(url, request, Map.class);
 
             return ResponseEntity.ok(Map.of(
                     "fileName", file.getOriginalFilename(),
-                    "transcription", response
+                    "transcription", response.getBody()
             ));
 
         } catch (Exception e) {
             return ResponseEntity.internalServerError().body(Map.of("error", e.getMessage()));
         }
     }
+
+
 }

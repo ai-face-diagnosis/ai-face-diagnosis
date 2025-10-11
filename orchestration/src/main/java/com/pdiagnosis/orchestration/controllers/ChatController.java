@@ -10,6 +10,7 @@ import org.springframework.util.MultiValueMap;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.multipart.MultipartFile;
+import org.springframework.web.util.UriComponentsBuilder;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -58,14 +59,14 @@ public class ChatController {
     public ResponseEntity<?> messageWithVoice(
             @RequestParam("image") MultipartFile imageFile,
             @RequestParam("voice") MultipartFile voiceFile,
-            @RequestParam("userId") Long userId
+            @RequestParam("chatId") Long chatId
     ) {
         try {
             // 1️⃣ Конвертируем голос в текст
             String voiceText = convertVoiceToText(voiceFile);
 
             // 2️⃣ Используем метод sendQuestion с изображением и распознанным текстом
-            return sendQuestion(imageFile, voiceText, userId);
+            return sendQuestion(imageFile, voiceText, chatId);
 
         } catch (Exception e) {
             return ResponseEntity.internalServerError().body(Map.of("error", e.getMessage()));
@@ -103,15 +104,18 @@ public class ChatController {
     @GetMapping("/{chatId}")
     public ResponseEntity<?> getChatHistory(@PathVariable Long chatId) {
         try {
-            // 1️⃣ Формируем URL сервиса истории (applicationService)
-            String historyServiceUrl = chatHistoryGetter + "/getAll?chatId=" + chatId;
+            // 1️⃣ Формируем URL для запроса истории
+            String url = UriComponentsBuilder
+                    .fromHttpUrl(chatHistoryGetter)
+                    .queryParam("chatId", chatId)
+                    .toUriString();
 
             // 2️⃣ Запрос к сервису истории
             ResponseEntity<List<Map<String, Object>>> response = restTemplate.exchange(
-                    historyServiceUrl,
+                    url,
                     HttpMethod.GET,
                     null,
-                    new ParameterizedTypeReference<>() {}
+                    new ParameterizedTypeReference<List<Map<String, Object>>>() {}
             );
 
             if (!response.getStatusCode().is2xxSuccessful() || response.getBody() == null) {
@@ -157,6 +161,7 @@ public class ChatController {
                     .body(Map.of("error", "Failed to fetch chat history: " + e.getMessage()));
         }
     }
+
 
 
 
@@ -228,19 +233,20 @@ public class ChatController {
     }
 
     private boolean checkFaceOnImage(MultipartFile file) {
-        try {
-            HttpHeaders headers = new HttpHeaders();
-            headers.setContentType(MediaType.MULTIPART_FORM_DATA);
-
-            MultiValueMap<String, Object> body = new LinkedMultiValueMap<>();
-            body.add("file", new MultipartInputStreamFileResource(file.getInputStream(), file.getOriginalFilename()));
-            HttpEntity<MultiValueMap<String, Object>> request = new HttpEntity<>(body, headers);
-            ResponseEntity<Map> response = restTemplate.postForEntity(faceDetectionUrl, request, Map.class);
-            return response.getStatusCode() == HttpStatus.OK && Boolean.TRUE.equals(response.getBody().get("faceDetected"));
-
-        } catch (Exception e) {
-            return false;
-        }
+        return true;
+//        try {
+//            HttpHeaders headers = new HttpHeaders();
+//            headers.setContentType(MediaType.MULTIPART_FORM_DATA);
+//
+//            MultiValueMap<String, Object> body = new LinkedMultiValueMap<>();
+//            body.add("file", new MultipartInputStreamFileResource(file.getInputStream(), file.getOriginalFilename()));
+//            HttpEntity<MultiValueMap<String, Object>> request = new HttpEntity<>(body, headers);
+//            ResponseEntity<Map> response = restTemplate.postForEntity(faceDetectionUrl, request, Map.class);
+//            return response.getStatusCode() == HttpStatus.OK && Boolean.TRUE.equals(response.getBody().get("faceDetected"));
+//
+//        } catch (Exception e) {
+//            return false;
+//        }
     }
 
     private String sendToFastApiLLM(MultipartFile file) {

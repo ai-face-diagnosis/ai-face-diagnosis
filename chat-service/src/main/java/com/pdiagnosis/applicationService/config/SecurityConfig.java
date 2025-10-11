@@ -44,7 +44,9 @@ public class SecurityConfig {
                                 "/webjars/**",
                                 "/api/auth/**",
                                 "/api/users/register",
-                                "/api/chats/chatController/**"
+                                "/api/chats/chatController/**",
+                                "/api/chats/history/**",
+                                "/api/llm/**"
                         ).permitAll()
                         .anyRequest().authenticated()
                 )
