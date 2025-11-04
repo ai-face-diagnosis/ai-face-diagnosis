@@ -21,4 +21,5 @@ public interface LlmInterface {
      * @throws Exception при сетевых ошибках или неверных данных
      */
     String sendChatCompletion(String modelName, List<Map<String, String>> messages, Map<String, Object> options) throws Exception;
+    void updateMedicalCard(String modelName, List<Map<String, String>> messages, Map<String, Object> options,int userId) throws Exception;
 }

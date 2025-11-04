@@ -1,5 +1,4 @@
 from fastapi import FastAPI, UploadFile, File, HTTPException
-from huggingface_hub import snapshot_download
 import os
 import tensorflow as tf
 from tensorflow.keras.models import load_model
@@ -19,20 +18,42 @@ model = None
 
 def load_skin_model():
     global model
-    if not os.path.exists(MODEL_FILE):
-        snapshot_download(repo_id="Tanishq77/skin-condition-classifier", local_dir=MODEL_DIR)
-    
-    if not os.path.exists(MODEL_FILE):
-        raise RuntimeError("Model file not found after download.")
-    
-    model = load_model(MODEL_FILE)
+    try:
+        # Пытаемся загрузить существующую модель
+        if os.path.exists(MODEL_FILE):
+            model = load_model(MODEL_FILE)
+            print("✅ Model loaded successfully from cache")
+        else:
+            print("⚠️ Model not found locally. Please download manually.")
+            # Временно возвращаем заглушку
+            model = None
+    except Exception as e:
+        print(f"❌ Error loading model: {e}")
+        model = None
 
-# Загружаем модель при запуске
+# Загружаем модель при запуске (не блокируем запуск при ошибке)
 load_skin_model()
+
+@app.get("/health")
+async def health_check():
+    status = "healthy" if model is not None else "degraded (model not loaded)"
+    return {"status": status, "service": "disease-analysis"}
 
 @app.post("/analyze")
 async def analyze_image(file: UploadFile = File(...)):
     try:
+        # Если модель не загружена, возвращаем заглушку
+        if model is None:
+            return {
+                "condition": "Model not loaded",
+                "confidence": 0.0,
+                "probabilities": {
+                    'Acne': 0.0, 'Carcinoma': 0.0, 'Eczema': 0.0, 
+                    'Keratosis': 0.0, 'Milia': 0.0, 'Rosacea': 0.0
+                },
+                "note": "Disease analysis service is temporarily unavailable"
+            }
+
         file_content = await file.read()
         if not file_content:
             raise ValueError("Empty file received")
@@ -53,7 +74,7 @@ async def analyze_image(file: UploadFile = File(...)):
         if max_prob < 0.5:
             return {
                 "condition": "Healthy skin",
-                "confidence": float((1 - max_prob) * 100),  # Уверенность в здоровье = 100% - max(болезнь)
+                "confidence": float((1 - max_prob) * 100),
                 "probabilities": probabilities
             }
         else:

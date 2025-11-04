@@ -46,7 +46,8 @@ public class SecurityConfig {
                                 "/api/users/register",
                                 "/api/chats/chatController/**",
                                 "/api/chats/history/**",
-                                "/api/llm/**"
+                                "/api/llm/**",
+                                "/api/uploads/**"
                         ).permitAll()
                         .anyRequest().authenticated()
                 )

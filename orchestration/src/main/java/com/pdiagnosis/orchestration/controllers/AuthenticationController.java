@@ -3,6 +3,7 @@ package com.pdiagnosis.orchestration.controllers;
 import com.pdiagnosis.AuthenticationUser;
 import com.pdiagnosis.User;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -14,7 +15,14 @@ import org.springframework.web.client.RestTemplate;
 public class AuthenticationController {
 
     private final RestTemplate restTemplate;
-
+    @Value("${services.auth.reg.url}")
+    private String authRegServiceUrl;
+    @Value("${services.user.reg.url}")
+    private   String userServiceUrl;
+    @Value("${services.auth.del.url}")
+    private   String authUserServiceDelUrl;
+    @Value("${services.auth.log.url}")
+    private   String authServiceUrl;
     // DTO для запроса логина
     public static class LoginRequest {
         public String username;
@@ -51,9 +59,9 @@ public class AuthenticationController {
         public String username;
         public String password;
         public String email;
-//        public String fullName;
-//        public Integer age;
-//        public String gender; // "MALE", "FEMALE", "OTHER"
+        public String fullName;
+        public Integer age;
+        public String gender; // "MALE", "FEMALE", "OTHER"
 
         // Геттеры и сеттеры
         public String getUsername() { return username; }
@@ -62,18 +70,17 @@ public class AuthenticationController {
         public void setPassword(String password) { this.password = password; }
         public String getEmail() { return email; }
         public void setEmail(String email) { this.email = email; }
-//        public String getFullName() { return fullName; }
-//        public void setFullName(String fullName) { this.fullName = fullName; }
-//        public Integer getAge() { return age; }
-//        public void setAge(Integer age) { this.age = age; }
-//        public String getGender() { return gender; }
-//        public void setGender(String gender) { this.gender = gender; }
+        public String getFullName() { return fullName; }
+        public void setFullName(String fullName) { this.fullName = fullName; }
+        public Integer getAge() { return age; }
+        public void setAge(Integer age) { this.age = age; }
+        public String getGender() { return gender; }
+        public void setGender(String gender) { this.gender = gender; }
     }
 
     @PostMapping("/login")
     public ResponseEntity<?> login(@RequestBody LoginRequest loginRequest) {
         // Пересылка запроса логина в authentication-service
-        String authServiceUrl = "http://localhost:8080/api/auth/login";
         ResponseEntity<LoginResponse> response = restTemplate.postForEntity(
                 authServiceUrl, loginRequest, LoginResponse.class);
 
@@ -93,9 +100,8 @@ public class AuthenticationController {
         authUser.setPassword(registerRequest.getPassword());
 
         // Регистрация в authentication-service
-        String authServiceUrl = "http://localhost:8080/api/auth/register";
         ResponseEntity<AuthenticationUser> authResponse = restTemplate.postForEntity(
-                authServiceUrl, authUser, AuthenticationUser.class);
+                authRegServiceUrl, authUser, AuthenticationUser.class);
 
         if (authResponse.getStatusCode() == HttpStatus.CONFLICT) {
             return ResponseEntity.status(HttpStatus.CONFLICT)
@@ -108,12 +114,8 @@ public class AuthenticationController {
             User user = new User();
             user.setUsername(registerRequest.getUsername());
             user.setEmail(registerRequest.getEmail());
-//            user.setFullName(registerRequest.getFullName());
-//            user.setAge(registerRequest.getAge());
-//            user.setGender(registerRequest.getGender());
             user.setActive(true); // Устанавливаем по умолчанию, как в модели User
 
-            String userServiceUrl = "http://localhost:8081/api/users/register";
             ResponseEntity<User> userResponse = restTemplate.postForEntity(
                     userServiceUrl, user, User.class);
 
@@ -122,7 +124,7 @@ public class AuthenticationController {
             } else {
                 // Откат регистрации в authentication-service
                 // В продакшене рекомендуется использовать распределенные транзакции
-                String deleteAuthUserUrl = "http://localhost:8080/api/auth/delete/" + registerRequest.getUsername();
+                String deleteAuthUserUrl = authUserServiceDelUrl + registerRequest.getUsername();
                 restTemplate.delete(deleteAuthUserUrl);
                 return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                         .body("Не удалось зарегистрировать пользователя в user-service");

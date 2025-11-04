@@ -1,28 +1,30 @@
-# Используем официальный образ Maven для сборки
-FROM maven:3.9.5-eclipse-temurin-17 AS build
+# === Stage 1: Build common-dto ===
+FROM maven:3.9.2-eclipse-temurin-21 AS common-builder
+WORKDIR /common
+COPY ../common/pom.xml ./pom.xml
+COPY ../common/src ./src
+RUN mvn clean install -DskipTests
 
-# Устанавливаем рабочую директорию
+# === Stage 2: Build authentication-service ===
+FROM maven:3.9.2-eclipse-temurin-21 AS builder
 WORKDIR /app
 
-# Копируем pom.xml и скачиваем зависимости
+# Копируем pom и src
 COPY pom.xml .
-RUN mvn dependency:go-offline
-
-# Копируем исходники
 COPY src ./src
 
-# Собираем проект
+# Копируем локальный репозиторий Maven из stage 1
+COPY --from=common-builder /root/.m2 /root/.m2
+
+# Сборка проекта
 RUN mvn clean package -DskipTests
 
-# Используем легковесный образ для запуска
-FROM eclipse-temurin:17-jre
-
-# Рабочая директория в контейнере
+# === Stage 3: Run stage ===
+FROM eclipse-temurin:21-jre
 WORKDIR /app
 
-# Копируем собранный jar из стадии сборки
-COPY --from=build /app/target/common-dto-0.0.1-SNAPSHOT.jar app.jar
+COPY --from=builder /app/target/*.jar app.jar
 
-# Команда запуска приложения
-ENTRYPOINT ["java", "-jar", "app.jar"]
+EXPOSE 8080
+ENTRYPOINT ["java","-jar","app.jar"]
 

@@ -1,4 +1,4 @@
-package com.pdiagnosis.applicationService.controllers;
+package com.pdiagnosis.applicationService.services;
 
 import org.springframework.core.io.InputStreamResource;
 
@@ -21,6 +21,6 @@ public class MultipartInputStreamFileResource extends InputStreamResource {
 
     @Override
     public long contentLength() throws IOException {
-        return -1; // let HttpEntity figure it out
+        return -1;
     }
 }

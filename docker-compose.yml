@@ -1,24 +1,154 @@
-services:  coordinator:
-    build: ./coordinator
+version: "3.9"
+
+services:
+  # 🧠 PostgreSQL (общая база для всех сервисов)
+  postgres:
+    image: postgres:16
+    container_name: postgres-db
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
     ports:
-      - "8000:8000"
-    depends_on:
-      - face-analysis
-      - disease-analysis
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U postgres" ]
+      interval: 5s
+      timeout: 5s
+      retries: 5
     networks:
       - health-net
 
+  # 🔐 Authentication Service
+  authentication-service:
+    build:
+      context: .
+      dockerfile: authentication-service/Dockerfile
+    container_name: authentication-service
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/authentication
+      SPRING_DATASOURCE_USERNAME: postgres
+      SPRING_DATASOURCE_PASSWORD: password
+      SPRING_JPA_HIBERNATE_DDL_AUTO: update
+      SPRING_FLYWAY_ENABLED: "true"
+    ports:
+      - "8080:8080"
+    depends_on:
+       postgres:
+          condition: service_healthy
+
+    networks:
+      - health-net
+
+  # 👥 User Service
+  user-service:
+    build:
+      context: .
+      dockerfile: user-service/Dockerfile
+    container_name: user-service
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/users_rep
+      SPRING_DATASOURCE_USERNAME: postgres
+      SPRING_DATASOURCE_PASSWORD: password
+      SPRING_JPA_HIBERNATE_DDL_AUTO: update
+      SPRING_FLYWAY_ENABLED: "true"
+    ports:
+      - "8081:8081"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - health-net
+
+  # 💬 Chat Service
+  chat-service:
+    build:
+      context: .
+      dockerfile: chat-service/Dockerfile
+    container_name: chat-service
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/chats
+      SPRING_DATASOURCE_USERNAME: postgres
+      SPRING_DATASOURCE_PASSWORD: password
+      SPRING_JPA_HIBERNATE_DDL_AUTO: update
+      SPRING_FLYWAY_ENABLED: "true"
+      GROQ_API_KEY: ${GROQ_API_KEY:-test-key}
+    ports:
+      - "8082:8082"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - health-net
+
+  # 🧩 Orchestration Service (Spring Boot)
+  orchestration-service:
+    build:
+      context: .
+      dockerfile: orchestration/Dockerfile
+    container_name: orchestration-service
+    ports:
+      - "8084:8084"
+    depends_on:
+      authentication-service:
+        condition: service_started
+      user-service:
+        condition: service_started
+      chat-service:
+        condition: service_started
+    networks:
+      - health-net
+
+  # 🧬 Disease Analysis (Python/ML)
   disease-analysis:
     build: ./disease-analysis
+    container_name: disease-analysis
+    ports:
+      - "8010:8000"
     networks:
       - health-net
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
 
+  # 👁 Face Analysis (Python/OpenCV)
   face-analysis:
     build: ./face-analysis
+    container_name: face-analysis
+    ports:
+      - "8020:80"
+    networks:
+      - health-net
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:80/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # 🧭 Coordinator
+  coordinator:
+    build: ./coordinator
+    container_name: coordinator
+    ports:
+      - "8030:8000"
+    depends_on:
+      face-analysis:
+        condition: service_healthy
+      disease-analysis:
+        condition: service_healthy
     networks:
       - health-net
 
 networks:
   health-net:
     driver: bridge
+
+volumes:
+  postgres_data:
 

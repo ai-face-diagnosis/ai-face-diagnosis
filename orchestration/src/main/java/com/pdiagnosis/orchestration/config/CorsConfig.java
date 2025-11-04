@@ -15,7 +15,7 @@ public class CorsConfig {
             public void addCorsMappings(CorsRegistry registry) {
                 registry.addMapping("/**")
                         .allowedOrigins(
-                                "http://localhost:8084",  // Swagger Orchestration
+                                "http://localhost:8084",
                                 "http://localhost:8080",
                                 "http://localhost:8081",
                                 "http://localhost:8082",

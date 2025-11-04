@@ -1,34 +1,27 @@
-# syntax=docker/dockerfile:1
+# ==== Stage 1: Build common-dto ====
+FROM maven:3.9.9-eclipse-temurin-21 AS common-builder
+WORKDIR /common
 
-# 1. Сборка проекта
-FROM eclipse-temurin:21-jdk-alpine AS build
+COPY common/pom.xml ./pom.xml
+COPY common/src ./src
+RUN mvn clean install -DskipTests
 
+# ==== Stage 2: Build orchestration-service ====
+FROM maven:3.9.9-eclipse-temurin-21 AS builder
 WORKDIR /app
 
-# Копируем pom.xml и скачиваем зависимости
-COPY pom.xml .
-RUN mkdir src && echo " " > src/placeholder.txt
-RUN mvn dependency:go-offline -B
+COPY orchestration/pom.xml ./pom.xml
+COPY orchestration/src ./src
 
-# Копируем исходники и собираем JAR
-COPY src ./src
+COPY --from=common-builder /root/.m2 /root/.m2
+RUN mvn dependency:go-offline -B
 RUN mvn clean package -DskipTests
 
-# 2. Финальный образ для запуска
-FROM eclipse-temurin:21-jdk-alpine
-
+# ==== Stage 3: Runtime ====
+FROM eclipse-temurin:21-jre
 WORKDIR /app
-
-# Копируем JAR из стадии сборки
-COPY --from=build /app/target/*.jar app.jar
-
-# Настройка порта Spring Boot
+COPY --from=builder /app/target/orchestration-0.0.1-SNAPSHOT.jar app.jar
 EXPOSE 8084
-
-# Передаем переменные окружения для конфигурации (опционально)
 ENV SPRING_PROFILES_ACTIVE=prod
-ENV SERVER_PORT=8084
-
-# Запуск приложения
-ENTRYPOINT ["java", "-jar", "app.jar"]
-
+ENV JAVA_OPTS=""
+ENTRYPOINT ["sh", "-c", "java $JAVA_OPTS -jar app.jar"]

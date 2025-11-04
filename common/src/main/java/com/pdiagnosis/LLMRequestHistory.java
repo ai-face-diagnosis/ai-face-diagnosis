@@ -1,5 +1,6 @@
 package com.pdiagnosis;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.persistence.*;
 import lombok.*;
@@ -22,15 +23,18 @@ public class LLMRequestHistory {
     @Column(nullable = false)
     private LocalDateTime requestTime = LocalDateTime.now();
 
-    @Lob
-    @Column(nullable = false, columnDefinition = "TEXT")
-    private String llmResponse;
-
+    @Column(name = "response", nullable = false, columnDefinition = "TEXT")
+    @Basic(fetch = FetchType.EAGER)
+    private String response;
+    @Column(name = "prompt",nullable = false, columnDefinition = "TEXT")
+    @Basic(fetch = FetchType.EAGER)
+    private String prompt;
     @Column(length = 255)
     private String imageUrl;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "chat_id", nullable = false)
+    @JsonIgnore
     private Chat chat;
 
     @PrePersist

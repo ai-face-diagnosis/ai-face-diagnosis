@@ -12,7 +12,6 @@ import org.springframework.web.client.RestTemplate;
 
 @EntityScan(basePackages = "com.pdiagnosis") // чтобы видел Entity из common-dto
 public class OrchestrationApplication {
-
 	public static void main(String[] args) {
 		SpringApplication.run(OrchestrationApplication.class, args);
 	}

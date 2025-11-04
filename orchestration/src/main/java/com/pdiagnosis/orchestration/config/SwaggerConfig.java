@@ -30,12 +30,4 @@ public class SwaggerConfig {
                                         .bearerFormat("JWT")));
     }
 
-    @Bean
-    public GroupedOpenApi orchestrationApi() {
-        return GroupedOpenApi.builder()
-                .group("orchestration")
-                .packagesToScan("com.pdiagnosis.orchestration.controllers")
-                .pathsToMatch("/api/**")
-                .build();
-    }
 }
