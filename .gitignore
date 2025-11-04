@@ -77,10 +77,7 @@ tmp/
 *~
 
 # Project-specific (add your project-specific patterns here)
-*.sqlite3
-*.db
-migrations/
-*.sql
+
 .png
 next-env.d.ts
 *.dump
