@@ -59,9 +59,7 @@ public class AuthenticationController {
         public String username;
         public String password;
         public String email;
-        public String fullName;
-        public Integer age;
-        public String gender; // "MALE", "FEMALE", "OTHER"
+
 
         // Геттеры и сеттеры
         public String getUsername() { return username; }
@@ -69,13 +67,7 @@ public class AuthenticationController {
         public String getPassword() { return password; }
         public void setPassword(String password) { this.password = password; }
         public String getEmail() { return email; }
-        public void setEmail(String email) { this.email = email; }
-        public String getFullName() { return fullName; }
-        public void setFullName(String fullName) { this.fullName = fullName; }
-        public Integer getAge() { return age; }
-        public void setAge(Integer age) { this.age = age; }
-        public String getGender() { return gender; }
-        public void setGender(String gender) { this.gender = gender; }
+
     }
 
     @PostMapping("/login")

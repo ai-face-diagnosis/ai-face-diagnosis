@@ -173,8 +173,8 @@ def analyze_skin(img: np.ndarray) -> dict:
     except Exception as e:
         return {"error": str(e)}
 @app.get("/health")
-async def health_check():
-    return {"status": "healthy", "service": "face-analysis"}
+def health():
+    return {"status": "ok", "service": "face-analysis"}
 @app.post("/analyze")
 async def analyze_face(
     face: UploadFile = File(...),

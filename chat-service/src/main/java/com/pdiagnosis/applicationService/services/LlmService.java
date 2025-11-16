@@ -1,11 +1,9 @@
 package com.pdiagnosis.applicationService.services;
 
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.Resource;
-import org.springframework.http.HttpEntity;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.MediaType;
-import org.springframework.http.ResponseEntity;
+import org.springframework.http.*;
 import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.stereotype.Service;
 import org.springframework.util.LinkedMultiValueMap;
@@ -22,6 +20,7 @@ import java.util.*;
 
 @ApplicationScope
 @Service
+@Slf4j  // <-- добавь
 public class LlmService {
     @Value("${upload.api.key}")
     private  String keyUpload;
@@ -47,35 +46,79 @@ public class LlmService {
         return result;
     }
     public String uploadImage(MultipartFile file) throws IOException, InterruptedException {
-        String realContentType = detectRealContentType(file.getBytes());
-        if ("image/avif".equals(realContentType)) {
-            file = convertAvifToJpeg(file);
+        log.info("=== IMAGE UPLOAD START ===");
+        log.info("Original file: name={}, size={} bytes, contentType={}",
+                file.getOriginalFilename(), file.getSize(), file.getContentType());
+
+        try {
+            // ШАГ 1: Определяем реальный тип файла
+            byte[] bytes = file.getBytes();
+            String realContentType = detectRealContentType(bytes);
+            log.info("Detected real content type: {}", realContentType);
+
+            // ШАГ 2: Конвертируем AVIF → JPEG, если нужно
+            if ("image/avif".equals(realContentType)) {
+                log.info("AVIF detected — converting to JPEG...");
+                file = convertAvifToJpeg(file);
+                log.info("AVIF → JPEG conversion completed. New size: {} bytes", file.getSize());
+            }
+
+            // ШАГ 3: Формируем multipart/form-data
+            MultiValueMap<String, Object> body = new LinkedMultiValueMap<>();
+            body.add("key", keyUpload);
+            body.add("name", file.getOriginalFilename());
+            body.add("expiration", "60");
+
+            String contentType = "image/jpeg";
+            HttpHeaders partHeaders = new HttpHeaders();
+            partHeaders.setContentType(MediaType.parseMediaType(contentType));
+
+            HttpEntity<Resource> imagePart = new HttpEntity<>(file.getResource(), partHeaders);
+            body.add("image", imagePart);
+
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.MULTIPART_FORM_DATA);
+
+            HttpEntity<MultiValueMap<String, Object>> request = new HttpEntity<>(body, headers);
+
+            log.debug("Multipart request body prepared:");
+            log.debug("  - key: {}", keyUpload.substring(0, Math.min(8, keyUpload.length())) + "...");
+            log.debug("  - name: {}", file.getOriginalFilename());
+            log.debug("  - expiration: 60");
+            log.debug("  - image: {} bytes, type: {}", file.getSize(), contentType);
+
+            // ШАГ 4: Отправляем на imgbb
+            log.info("Uploading image to imgbb.com...");
+            ResponseEntity<Map> response = restTemplate.postForEntity(
+                    "https://api.imgbb.com/1/upload", request, Map.class
+            );
+
+            log.info("imgbb API responded with status: {}", response.getStatusCode());
+
+            if (response.getStatusCode() != HttpStatus.OK || response.getBody() == null) {
+                log.error("imgbb returned error status or empty body: {}", response.getStatusCode());
+                throw new RuntimeException("Failed to upload image to imgbb: " + response.getStatusCode());
+            }
+
+            Map<String, Object> responseBody = response.getBody();
+            log.debug("Full imgbb response: {}", responseBody);
+
+            Map<String, Object> data = (Map<String, Object>) responseBody.get("data");
+            if (data == null || data.get("url") == null) {
+                log.error("imgbb response missing 'data.url': {}", responseBody);
+                throw new RuntimeException("Invalid response from imgbb: missing image URL");
+            }
+
+            String imageUrl = data.get("url").toString();
+            log.info("Image uploaded successfully! URL: {}", imageUrl);
+            log.info("=== IMAGE UPLOAD SUCCESS ===");
+
+            return imageUrl;
+
+        } catch (Exception e) {
+            log.error("Failed to upload image: {}", e.getMessage(), e);
+            throw e;
         }
-
-        MultiValueMap<String, Object> body = new LinkedMultiValueMap<>();
-        body.add("key", keyUpload);
-
-        String contentType = "image/jpeg";
-        HttpHeaders partHeaders = new HttpHeaders();
-        partHeaders.setContentType(MediaType.parseMediaType(contentType));
-
-        HttpEntity<Resource> imagePart = new HttpEntity<>(file.getResource(), partHeaders);
-        body.add("image", imagePart);
-
-        body.add("name", file.getOriginalFilename());
-        body.add("expiration", "60");
-
-        HttpHeaders headers = new HttpHeaders();
-        headers.setContentType(MediaType.MULTIPART_FORM_DATA);
-
-        HttpEntity<MultiValueMap<String, Object>> request = new HttpEntity<>(body, headers);
-
-        ResponseEntity<Map> response = restTemplate.postForEntity(
-                "https://api.imgbb.com/1/upload", request, Map.class
-        );
-
-        Map<String, Object> data = (Map<String, Object>) response.getBody().get("data");
-        return data.get("url").toString();
     }
 
     private String detectRealContentType(byte[] bytes) {

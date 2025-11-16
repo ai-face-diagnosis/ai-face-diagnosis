@@ -4,8 +4,10 @@ import com.pdiagnosis.applicationService.model.LlmInterface;
 import com.pdiagnosis.applicationService.model.MedicalCard;
 import com.pdiagnosis.applicationService.repositories.MedicalCardRepository;
 import com.pdiagnosis.applicationService.services.LlmService;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -20,6 +22,7 @@ import java.util.Optional;
 
 @RestController
 @RequestMapping("/api/llm")
+@Slf4j  // <-- добавь это
 public class LlmController {
     private LlmService llmService;
     private final LlmInterface llmClient;
@@ -86,26 +89,35 @@ public class LlmController {
      */
     @PostMapping("/chat")
     public ResponseEntity<?> sendChat(@RequestBody Map<String, String> requestBody) {
+        log.info("=== LLM CHAT REQUEST START ===");
+        log.info("Request body: {}", requestBody);
+
         try {
             String modelName = requestBody.getOrDefault("model", "llama-3.3-70b-versatile");
-            List<MedicalCard> cards=new ArrayList<>();
             Integer userId = Integer.parseInt(requestBody.getOrDefault("userId", "-1"));
-            if(userId==-1){
+
+            if (userId == -1) {
+                log.warn("userId is missing or invalid");
                 return ResponseEntity.badRequest().body(Map.of("error", "userId is required"));
-            }else{
-
-               cards= repository.findByUserId(userId);
             }
+
+            List<MedicalCard> cards = repository.findByUserId(userId);
+            log.info("Found {} medical cards for userId {}", cards.size(), userId);
+
             StringBuilder cardsString = new StringBuilder();
-            cardsString.append("Медицинская карта пользователя ").append(userId);
-            for(var card:cards){
-                cardsString.append(card.getFullDescription());
+            cardsString.append("Медицинская карта пользователя ").append(userId).append("\n");
+            for (var card : cards) {
+                cardsString.append(card.getFullDescription()).append("\n");
             }
-            String prompt = requestBody.get("prompt");
+            log.debug("Medical cards content: {}", cardsString);
 
+            String prompt = requestBody.get("prompt");
             if (prompt == null || prompt.isEmpty()) {
+                log.warn("Prompt is missing");
                 return ResponseEntity.badRequest().body(Map.of("error", "Missing 'prompt' field"));
             }
+
+            log.info("Sending to LLM: model={}, prompt='{}'", modelName, prompt);
 
             List<Map<String, String>> messages = List.of(
                     Map.of("role", "system", "content", SYSTEM_PROMPT),
@@ -114,16 +126,24 @@ public class LlmController {
             );
 
             String response = llmClient.sendChatCompletion(modelName, messages, Map.of());
-            modelName="qwen/qwen3-32b";
-            messages = List.of(
+            log.info("LLM raw response: {}", response);
+
+            // Второй вызов для обновления карты
+            modelName = "qwen/qwen3-32b";
+            List<Map<String, String>> updateMessages = List.of(
                     Map.of("role", "system", "content", PROMPT_TO_EDIT_CARD),
                     Map.of("role", "user", "content", cardsString.toString()),
-                    Map.of("role", "user", "content",response)
-                    );
-            llmClient.updateMedicalCard(modelName,messages,Map.of("temperature", 0.3),userId);
+                    Map.of("role", "user", "content", response)
+            );
+            log.info("medical card response: {}", response);
+            log.info("Updating medical card for userId {}", userId);
+            llmClient.updateMedicalCard(modelName, updateMessages, Map.of("temperature", 0.3), userId);
+
+            log.info("=== LLM CHAT REQUEST SUCCESS ===");
             return ResponseEntity.ok(Map.of("response", response));
 
         } catch (Exception e) {
+            log.error("Error in /chat: {}", e.getMessage(), e);
             return ResponseEntity.internalServerError().body(Map.of("error", e.getMessage()));
         }
     }
@@ -143,32 +163,71 @@ public class LlmController {
      */
     @PostMapping(value = "/analyze", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<?> analyzeImage(@RequestParam("file") MultipartFile file) {
+        log.info("=== ANALYZE IMAGE REQUEST START ===");
+        log.info("groq:"+key);
+        log.info("Received file: name={}, size={} bytes, contentType={}",
+                file.getOriginalFilename(), file.getSize(), file.getContentType());
+
         try {
             if (file.isEmpty()) {
+                log.warn("Uploaded file is empty");
                 return ResponseEntity.badRequest().body(Map.of("error", "Missing 'file'"));
             }
+
+            log.info("Uploading image to temporary storage...");
             String imageUrl = llmService.uploadImage(file);
+            log.info("Image uploaded successfully. URL: {}", imageUrl);
+
+            log.info("Preparing request to Groq API for image analysis...");
+            HttpEntity<?> requestEntity = llmService.formPostForAnalyzeImage(key, imageUrl);
+            log.debug("Groq request body: {}", requestEntity.getBody());
+            log.debug("Groq request headers: {}", requestEntity.getHeaders());
+
+            log.info("Sending image analysis request to Groq: https://api.groq.com/openai/v1/chat/completions");
             ResponseEntity<Map> groqResponse = restTemplate.postForEntity(
                     "https://api.groq.com/openai/v1/chat/completions",
-                    llmService.formPostForAnalyzeImage(key, imageUrl),
+                    requestEntity,
                     Map.class
             );
+
+            log.info("Groq API responded with status: {}", groqResponse.getStatusCode());
             Map<String, Object> body = groqResponse.getBody();
+
+            if (body == null) {
+                log.error("Groq response body is null");
+                return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                        .body(Map.of("error", "Empty response from Groq"));
+            }
+
+            log.debug("Full Groq response body: {}", body);
+
             String firstWord = Optional.ofNullable(body)
                     .map(b -> (List<?>) b.get("choices"))
                     .filter(list -> !list.isEmpty())
                     .map(list -> (Map<String, Object>) list.get(0))
                     .map(choice -> (Map<String, Object>) choice.get("message"))
                     .map(msg -> (String) msg.get("content"))
-                    .map(str -> str.trim().split("\\.", 2)[0])
+                    .map(str -> {
+                        log.debug("Raw LLM content: {}", str);
+                        return str.trim().split("\\.", 2)[0];
+                    })
                     .orElse("");
-            body.put("faceDetected", "Да".equalsIgnoreCase(firstWord));
-            return ResponseEntity.status(HttpStatus.OK).body(body);
+
+            log.info("Extracted first word from LLM response: '{}'", firstWord);
+
+            boolean faceDetected = "Да".equalsIgnoreCase(firstWord);
+            log.info("Face detected: {}", faceDetected ? "YES" : "NO");
+
+            body.put("faceDetected", faceDetected);
+
+            log.info("=== ANALYZE IMAGE REQUEST SUCCESS ===");
+            return ResponseEntity.ok(body);
+
         } catch (Exception e) {
+            log.error("Error in /analyze: {}", e.getMessage(), e);
             return ResponseEntity.internalServerError().body(Map.of("error", e.getMessage()));
         }
     }
-
     /**
      * 🎙 Метод для отправки аудиофайла и получения транскрипции.
      * Принимает multipart/form-data с аудиофайлом.

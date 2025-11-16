@@ -40,7 +40,6 @@ ENV JAVA_OPTS=""
 ENV SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/chats
 ENV SPRING_DATASOURCE_USERNAME=postgres
 ENV SPRING_DATASOURCE_PASSWORD=password
-ENV LLM_GROQ_API_KEY=your_default_key_here
 
 # Точка входа
 ENTRYPOINT ["sh", "-c", "java $JAVA_OPTS -jar app.jar"]

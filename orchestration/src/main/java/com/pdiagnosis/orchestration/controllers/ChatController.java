@@ -204,9 +204,14 @@ public class ChatController {
             if (((Boolean)faceDetected.get("check"))) {
                 String llmResult = "";
                 if (imageFile != null)
-                    llmResult = sendToFastApiLLM(imageFile);
+                    try {
+                        llmResult = sendToFastApiLLM(imageFile);
+
 
                  finalResponse = sendToSpringLLM(llmResult+"\nОписание лица от whisper large 3 pro:"+faceDetected.get("answer").toString(), prompt,chatId);
+                    }catch (Exception e) {
+                        finalResponse = e.getMessage();
+                    }
             }
             saveChatHistory(chatId, prompt, finalResponse, imageFile);
 
