@@ -100,7 +100,7 @@ public class GroqLlmClient implements LlmInterface {
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
         headers.setBearerAuth(apiKey);
-
+        Thread.sleep(1000);
         HttpEntity<String> request = new HttpEntity<>(objectMapper.writeValueAsString(body), headers);
 
         log.info("🌐 Sending update request to Groq API…");
@@ -171,55 +171,55 @@ public class GroqLlmClient implements LlmInterface {
         }
 
         String[] illnesses = llm.split("Ответ:")[1].split("\\n");
+        if(illnesses.length !=0) {
+            Map<String, List<String>> illnessMap = new HashMap<>();
+            for (var line : illnesses) {
+                if (!line.strip().isEmpty()) {
+                    List<String> parsed = parseIllness(line);
+                    if (!parsed.isEmpty()) {
+                        illnessMap.put(parsed.getFirst(), parsed);
+                        log.info("➕ Added illness from LLM: {}", parsed);
+                    } else {
+                        log.warn("⚠️ Skipped unparsable illness line: {}", line);
+                    }
+                }
+            }
 
-        Map<String, List<String>> illnessMap = new HashMap<>();
-        for (var line : illnesses) {
-            if (!line.strip().isEmpty()) {
-                List<String> parsed = parseIllness(line);
-                if (!parsed.isEmpty()) {
-                    illnessMap.put(parsed.getFirst(), parsed);
-                    log.info("➕ Added illness from LLM: {}", parsed);
-                } else {
-                    log.warn("⚠️ Skipped unparsable illness line: {}", line);
+            if (!diagnosis.isEmpty()) {
+                log.info("🔄 Updating existing medical cards…");
+                for (var card : diagnosis) {
+                    List<String> update = illnessMap.get(card.getDiseas());
+
+                    if (update == null) {
+                        log.warn("⚠️ LLM response has no data for disease '{}', skipping", card.getDiseas());
+                        continue;
+                    }
+
+                    log.info("✎ Updating {} → {}", card.getDiseas(), update);
+
+                    card.setDiseas(update.getFirst());
+                    card.setDescription(update.get(2));
+                    card.setPossibility(Integer.parseInt(update.get(1)));
+                    repository.save(card);
+                }
+            } else {
+                log.info("➕ Creating NEW medical cards…");
+
+                for (var disease : illnessMap.keySet()) {
+                    List<String> values = illnessMap.get(disease);
+
+                    log.info("📌 Creating new card: {}", values);
+
+                    MedicalCard newCard = new MedicalCard();
+                    newCard.setUserId(userId);
+                    newCard.setDiseas(values.getFirst());
+                    newCard.setDescription(values.get(2));
+                    newCard.setPossibility(Integer.parseInt(values.get(1)));
+
+                    repository.save(newCard);
                 }
             }
         }
-
-        if (!diagnosis.isEmpty()) {
-            log.info("🔄 Updating existing medical cards…");
-            for (var card : diagnosis) {
-                List<String> update = illnessMap.get(card.getDiseas());
-
-                if (update == null) {
-                    log.warn("⚠️ LLM response has no data for disease '{}', skipping", card.getDiseas());
-                    continue;
-                }
-
-                log.info("✎ Updating {} → {}", card.getDiseas(), update);
-
-                card.setDiseas(update.getFirst());
-                card.setDescription(update.get(2));
-                card.setPossibility(Integer.parseInt(update.get(1)));
-                repository.save(card);
-            }
-        } else {
-            log.info("➕ Creating NEW medical cards…");
-
-            for (var disease : illnessMap.keySet()) {
-                List<String> values = illnessMap.get(disease);
-
-                log.info("📌 Creating new card: {}", values);
-
-                MedicalCard newCard = new MedicalCard();
-                newCard.setUserId(userId);
-                newCard.setDiseas(values.getFirst());
-                newCard.setDescription(values.get(2));
-                newCard.setPossibility(Integer.parseInt(values.get(1)));
-
-                repository.save(newCard);
-            }
-        }
-
         log.info("✅ Medical card update completed for user {}", userId);
     }
 }

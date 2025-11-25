@@ -163,8 +163,8 @@ public class LlmService {
         original=converted;
         return original;
     }
-    public HttpEntity<Map<String, Object>> formPostForAnalyzeImage(String key, String imageUrl) throws IOException {
-
+    // LlmService.java (или где определен этот метод)
+    public HttpEntity<Map<String, Object>> formPostForAnalyzeImage(String key, String base64DataUri) { // Изменили имя параметра
 
         Map<String, Object> requestBody = new HashMap<>();
         requestBody.put("model", "meta-llama/llama-4-maverick-17b-128e-instruct");
@@ -185,7 +185,9 @@ public class LlmService {
         imageContent.put("type", "image_url");
 
         Map<String, Object> imageUrlMap = new HashMap<>();
-        imageUrlMap.put("url", imageUrl);
+        // *** Ключевое изменение: теперь здесь Base64 Data URI ***
+        imageUrlMap.put("url", base64DataUri);
+
         imageContent.put("image_url", imageUrlMap);
 
         content.add(imageContent);

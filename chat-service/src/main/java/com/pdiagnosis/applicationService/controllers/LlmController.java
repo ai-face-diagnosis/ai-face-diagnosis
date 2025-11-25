@@ -15,10 +15,7 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 
 @RestController
 @RequestMapping("/api/llm")
@@ -163,8 +160,8 @@ public class LlmController {
      */
     @PostMapping(value = "/analyze", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<?> analyzeImage(@RequestParam("file") MultipartFile file) {
-        log.info("=== ANALYZE IMAGE REQUEST START ===");
-        log.info("groq:"+key);
+        log.info("=== ANALYZE IMAGE REQUEST START (Base64) ===");
+        log.info("groq:" + key);
         log.info("Received file: name={}, size={} bytes, contentType={}",
                 file.getOriginalFilename(), file.getSize(), file.getContentType());
 
@@ -174,14 +171,26 @@ public class LlmController {
                 return ResponseEntity.badRequest().body(Map.of("error", "Missing 'file'"));
             }
 
-            log.info("Uploading image to temporary storage...");
-            String imageUrl = llmService.uploadImage(file);
-            log.info("Image uploaded successfully. URL: {}", imageUrl);
+            // 1. Чтение файла и кодирование в Base64
+            byte[] fileBytes = file.getBytes();
+            String base64EncodedImage = Base64.getEncoder().encodeToString(fileBytes);
 
-            log.info("Preparing request to Groq API for image analysis...");
-            HttpEntity<?> requestEntity = llmService.formPostForAnalyzeImage(key, imageUrl);
-            log.debug("Groq request body: {}", requestEntity.getBody());
-            log.debug("Groq request headers: {}", requestEntity.getHeaders());
+            // Используем предоставленный MIME-тип, если он надежен.
+            // Если нужен более надежный метод: String mimeType = new Tika().detect(fileBytes);
+            String mimeType = Optional.ofNullable(file.getContentType()).orElse("application/octet-stream");
+
+            // Формируем полный Data URI: data:<mime-type>;base64,<base64-string>
+            String base64DataUri = String.format("data:%s;base64,%s", mimeType, base64EncodedImage);
+
+            log.info("Image encoded to Base64 (MIME: {}). Size of Base64 string: {} chars",
+                    mimeType, base64DataUri.length());
+
+            // 2. Подготовка запроса с Base64
+            log.info("Preparing request to Groq API for image analysis (Base64)...");
+            // Теперь передаем Base64 Data URI вместо imageUrl
+            HttpEntity<?> requestEntity = llmService.formPostForAnalyzeImage(key, base64DataUri);
+
+            log.debug("Groq request body (Base64 structure): {}", requestEntity.getBody());
 
             log.info("Sending image analysis request to Groq: https://api.groq.com/openai/v1/chat/completions");
             ResponseEntity<Map> groqResponse = restTemplate.postForEntity(
@@ -192,6 +201,8 @@ public class LlmController {
 
             log.info("Groq API responded with status: {}", groqResponse.getStatusCode());
             Map<String, Object> body = groqResponse.getBody();
+
+            // ... (Остальная логика обработки ответа Groq остается неизменной) ...
 
             if (body == null) {
                 log.error("Groq response body is null");
@@ -220,11 +231,11 @@ public class LlmController {
 
             body.put("faceDetected", faceDetected);
 
-            log.info("=== ANALYZE IMAGE REQUEST SUCCESS ===");
+            log.info("=== ANALYZE IMAGE REQUEST SUCCESS (Base64) ===");
             return ResponseEntity.ok(body);
 
         } catch (Exception e) {
-            log.error("Error in /analyze: {}", e.getMessage(), e);
+            log.error("Error in /analyze (Base64): {}", e.getMessage(), e);
             return ResponseEntity.internalServerError().body(Map.of("error", e.getMessage()));
         }
     }
