@@ -161,7 +161,6 @@ public class ChatController {
         }
     }
 
-    @GetMapping("/create")
     @PostMapping("/create")
     public ResponseEntity<?> createChat(
             @RequestParam("userId") Long userId,

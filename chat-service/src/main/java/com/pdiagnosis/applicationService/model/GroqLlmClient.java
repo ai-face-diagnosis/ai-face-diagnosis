@@ -169,9 +169,18 @@ public class GroqLlmClient implements LlmInterface {
             log.error("❌ LLM response missing 'Ответ:' block");
             return;
         }
-
+        log.info("llm answer: {}", llm);
+        String[] ill=llm.split("Ответ:");
+        if(ill.length<2){
+            log.warn("⚠️ No illnesses provided in LLM response. Aborting update.");
+            return;
+        }
         String[] illnesses = llm.split("Ответ:")[1].split("\\n");
-        if(illnesses.length !=0) {
+        log.info("illnesses size: {}", illnesses.length);
+        if (illnesses.length == 0 || (illnesses.length == 1 && illnesses[0].isBlank())) {
+            log.warn("⚠️ No illnesses provided in LLM response. Aborting update.");
+            return;
+        }
             Map<String, List<String>> illnessMap = new HashMap<>();
             for (var line : illnesses) {
                 if (!line.strip().isEmpty()) {
@@ -207,7 +216,10 @@ public class GroqLlmClient implements LlmInterface {
 
                 for (var disease : illnessMap.keySet()) {
                     List<String> values = illnessMap.get(disease);
-
+                        if (values.size() < 3) {
+                            log.error("❌ Invalid parsed illness data (size {}): {}", values.size(), values);
+                            continue;
+                        }
                     log.info("📌 Creating new card: {}", values);
 
                     MedicalCard newCard = new MedicalCard();
@@ -219,7 +231,7 @@ public class GroqLlmClient implements LlmInterface {
                     repository.save(newCard);
                 }
             }
+                    log.info("✅ Medical card update completed for user {}", userId);
         }
-        log.info("✅ Medical card update completed for user {}", userId);
     }
-}
+

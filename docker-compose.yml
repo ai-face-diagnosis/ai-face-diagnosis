@@ -121,6 +121,38 @@ services:
     networks:
       - health-net
 
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: frontend
+    ports:
+      - "3000:3000"
+    environment:
+      NEXT_PUBLIC_API_AUTH: http://authentication-service:8080
+      NEXT_PUBLIC_API_USER: http://user-service:8081
+      NEXT_PUBLIC_API_CHAT: http://chat-service:8082
+      NEXT_PUBLIC_API_ORCH: http://orchestration-service:8084
+      NEXT_PUBLIC_API_DISEASE: http://disease-analysis:8000
+      NEXT_PUBLIC_API_FACE: http://face-analysis:80
+    depends_on:
+      authentication-service:
+        condition: service_started
+      user-service:
+        condition: service_started
+      chat-service:
+        condition: service_started
+      orchestration-service:
+        condition: service_started
+      disease-analysis:
+        condition: service_started
+      face-analysis:
+        condition: service_started
+    networks:
+      - health-net
+
+
+
   # 🧭 Coordinator
   coordinator:
     build: ./coordinator
