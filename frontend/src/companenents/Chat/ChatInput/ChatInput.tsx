@@ -38,7 +38,6 @@ export default function ChatInput({ onSendMessage, accentColor }: ChatInputProps
     }
   }, [inputText])
 
-  // Обработчик клика по всему документу для остановки записи
   useEffect(() => {
     const handleDocumentClick = (e: MouseEvent) => {
       if (isVoiceRecording && voiceButtonRef.current && !voiceButtonRef.current.contains(e.target as Node)) {

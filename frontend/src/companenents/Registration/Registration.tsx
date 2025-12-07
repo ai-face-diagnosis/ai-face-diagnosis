@@ -45,7 +45,6 @@ async function registrationAction(prevState: RegistrationState, formData: FormDa
   const email = formData.get('email') as string
   const password = formData.get('password') as string
   
-  // Валидация email
   try {
     parse(emailSchema, email)
 } catch (error: unknown) {
@@ -57,7 +56,6 @@ async function registrationAction(prevState: RegistrationState, formData: FormDa
 }
 
   
-  // Валидация логина
   try {
     parse(loginSchema, login)
 } catch (error: unknown) {
@@ -70,7 +68,6 @@ async function registrationAction(prevState: RegistrationState, formData: FormDa
 }
 
   
-  // Валидация пароля
   try {
     parse(passwordSchema, password)
 } catch (error: unknown) {
@@ -124,7 +121,6 @@ export default function Registration({ registration, setRegistration }: Registra
 
   const modalRef = useRef<HTMLDivElement>(null)
 
-  // Закрытие по ESC
   useEffect(() => {
     const handleEscape = (e: KeyboardEvent) => {
       if (e.key === 'Escape' && registration !== 0) {
@@ -136,7 +132,6 @@ export default function Registration({ registration, setRegistration }: Registra
     return () => document.removeEventListener('keydown', handleEscape)
   }, [registration, setRegistration])
 
-  // Закрытие по клику вне модалки
   const handleOverlayClick = (e: React.MouseEvent) => {
     if (e.target === e.currentTarget) {
       setRegistration(0)

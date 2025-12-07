@@ -11,10 +11,6 @@ interface MessageApiItem {
   imageBase64?: string | null
 }
 
-
-/**
- * Получение сообщений из истории конкретного чата
- */
 export default async function loadMessages(chatId: number): Promise<MessageType[]> {
   if (!chatId) return []
 
@@ -29,14 +25,24 @@ export default async function loadMessages(chatId: number): Promise<MessageType[
     }
 
     const data = await response.json()
-    return data.map((msg: MessageApiItem) => ({
-      id: msg.id?.toString(),
-      text: msg.prompt || msg.response || '',
-      isOwn: false, // сообщения с бэка — от ассистента
-      timestamp: new Date(msg.requestTime || Date.now()),
-      image: msg.imageBase64 ? `data:image/jpeg;base64,${msg.imageBase64}` : undefined,
-      audio: undefined
-    }))
+
+    return data.map((msg: MessageApiItem) => {
+      let text = '';
+
+      if (msg.prompt && msg.response) {
+        text = `Вопрос: ${msg.prompt} \n\n Ответ: ${msg.response}`;
+      } else {
+        text = msg.prompt || msg.response || '';
+      }
+      return {
+        id: msg.id?.toString(),
+        text,
+        isOwn: false,
+        timestamp: new Date(msg.requestTime || Date.now()),
+        image: msg.imageBase64 ? `data:image/jpeg;base64,${msg.imageBase64}` : undefined,
+        audio: undefined
+      }
+    })
   } catch (e) {
     console.error('Ошибка загрузки сообщений:', e)
     return []

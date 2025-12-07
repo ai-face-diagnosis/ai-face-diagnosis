@@ -43,7 +43,6 @@ async function auntificationAction(
   const login = formData.get('login') as string
   const password = formData.get('password') as string
 
-  // === Клиентская валидация ===
   try {
     parse(loginSchema, login)
   } catch (error: unknown) {
@@ -72,7 +71,7 @@ async function auntificationAction(
     const { token, userId } = await LoginUser(login, password)
 
     prevState.setUserId?.({ token, userId })
-
+    localStorage.setItem('user', String(userId))
     return { success: true, error: null, fieldErrors: {} }
 } catch (error: unknown) {
   const message = error instanceof Error ? error.message : 'Ошибка входа'
@@ -87,13 +86,11 @@ async function auntificationAction(
 
 }
 
-// Хак: передаём setUserId через замыкание
 export default function Auntification({
   registration,
   setRegistration,
   setUserId,
 }: Auntification) {
-  // Оборачиваем action, чтобы передать setUserId
   const wrappedAction = async (prevState: AuntificationState, formData: FormData) => {
     return auntificationAction({ ...prevState, setUserId }, formData)
   }

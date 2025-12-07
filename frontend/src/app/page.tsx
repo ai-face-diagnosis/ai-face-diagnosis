@@ -19,13 +19,17 @@ export default function Page() {
   const [userId, setUserId] = useState<{ token: string; userId: number }>()
   const [chats, setChats] = useState<ChatType[]>([])
   const [messagesByChat, setMessagesByChat] = useState<Record<string, MessageType[]>>({})
-  const [chatKey, setChatKey] = useState<string>('') // выбранный чат
+  const [chatKey, setChatKey] = useState<string>('') 
   const [isChatSelectorOpen, setIsChatSelectorOpen] = useState(false)
   const [isInitializing, setIsInitializing] = useState(true)
   const [isChatLoading, setIsChatLoading] = useState(false)
   const [accentColor, setAccentColor] = useState('#059669')
-// console.log(userId, chats)
-  // --- Инициализация чатов при входе ---
+  useEffect(() => {
+    const user = localStorage.getItem('user')
+    if (typeof user === "string") {
+      setUserId({token: user, userId: Number(user)})
+    }
+  }, [])
   useEffect(() => {
     const initializeChats = async () => {
       if (!userId?.userId) {
@@ -37,7 +41,6 @@ export default function Page() {
         const userChats = await loadUserChats(userId.userId)
 
         if (userChats.length === 0) {
-          // создаем первый чат
           const firstChat = await createNewChat(userId, 'Мой первый чат')
           const newChat: ChatType = {
             id: firstChat.chatId.toString(),
@@ -53,7 +56,6 @@ export default function Page() {
           const sortedChats = userChats.sort((a, b) => Number(b.id) - Number(a.id))
           setChats(sortedChats)
 
-          // Загружаем первый чат
           const firstChatId = sortedChats[0].id.toString()
           const firstChatMessages = await loadMessages(Number(firstChatId))
           setMessagesByChat({ [firstChatId]: firstChatMessages })
@@ -69,11 +71,9 @@ export default function Page() {
     initializeChats()
   }, [userId])
 
-  // --- Выбор чата ---
   const handleChatSelect = async (chatId: string) => {
     setChatKey(chatId)
 
-    // Если уже есть сообщения — не загружаем заново
     if (messagesByChat[chatId]?.length) {
       setIsChatSelectorOpen(false)
       return
@@ -94,7 +94,6 @@ export default function Page() {
     }
   }
 
-  // --- Создание нового чата ---
   const handleCreateNewChat = async (chatName?: string) => {
     if (!userId) return
 
@@ -117,7 +116,6 @@ export default function Page() {
     }
   }
 
-  // --- Отправка сообщения ---
   const handleSendMessage = async (text: string, image?: File, audio?: Blob) => {
     if (!chatKey || !userId) {
       console.warn("Нет текущего чата или пользователя")
@@ -133,7 +131,6 @@ export default function Page() {
       audio: audio ? URL.createObjectURL(audio) : undefined,
     }
 
-    // Локально добавляем сообщение
     setMessagesByChat(prev => ({
       ...prev,
       [chatKey]: [...(prev[chatKey] || []), newMessage]
@@ -157,7 +154,6 @@ export default function Page() {
         }))
       }
       
-      // Обновляем историю из API
       // const updatedMessages = await loadMessages(Number(chatKey))
       // setMessagesByChat(prev => ({
         //   ...prev,

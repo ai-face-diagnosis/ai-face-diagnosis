@@ -42,7 +42,6 @@ url.searchParams.append('title', encodeURIComponent(title.trim()))
     throw new Error(msg)
   }
 
-  /* 2. Ожидаем только chatId */
   if (!data?.chatId) {
     throw new Error('Сервер не вернул chatId')
   }

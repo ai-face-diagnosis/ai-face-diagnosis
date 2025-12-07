@@ -21,7 +21,6 @@ export default async function LoginUser(login: string, password: string) {
     throw new Error(errorMessage)
   }
 
-  // Ожидаем: { token: string, userId: number }
   if (!data.token || !data.userId) {
     throw new Error('Неверный формат ответа сервера')
   }
