@@ -14,7 +14,7 @@ COPY orchestration/pom.xml ./pom.xml
 COPY orchestration/src ./src
 
 COPY --from=common-builder /root/.m2 /root/.m2
-RUN mvn dependency:go-offline -B
+
 RUN mvn clean package -DskipTests
 
 # ==== Stage 3: Runtime ====

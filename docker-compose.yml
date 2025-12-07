@@ -3,7 +3,7 @@ version: "3.9"
 services:
   # 🧠 PostgreSQL (общая база для всех сервисов)
   postgres:
-    image: postgres:16
+    image: postgres:latest
     container_name: postgres-db
     environment:
       POSTGRES_USER: postgres
@@ -11,7 +11,7 @@ services:
     ports:
       - "5432:5432"
     volumes:
-      - postgres_data:/var/lib/postgresql/data
+      - postgres_data:/var/lib/postgresql
       - ./init.sql:/docker-entrypoint-initdb.d/init.sql
     healthcheck:
       test: [ "CMD-SHELL", "pg_isready -U postgres" ]

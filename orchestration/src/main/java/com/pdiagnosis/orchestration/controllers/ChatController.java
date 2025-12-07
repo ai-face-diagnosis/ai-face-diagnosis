@@ -124,7 +124,7 @@ public class ChatController {
             List<Map<String, Object>> historyWithImages = rawHistory.stream().map(entry -> {
                 Map<String, Object> map = new HashMap<>();
                 map.put("id", entry.get("id"));
-                map.put("chatId", entry.get("chat") != null ? ((Map<?, ?>) entry.get("chat")).get("id") : null);
+                map.put("chatId", entry.get("chatId"));
                 map.put("requestTime", entry.get("requestTime"));
                 map.put("response", entry.get("response"));
                 map.put("prompt", entry.get("prompt"));

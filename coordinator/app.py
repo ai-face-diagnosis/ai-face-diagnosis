@@ -12,8 +12,8 @@ logger = logging.getLogger(__name__)
 
 app = FastAPI(title="Coordination Microservice")
 
-FACE_ANALYSIS_URL = "http://face-analysis/analyze"
-DISEASE_ANALYSIS_URL = "http://disease-analysis/analyze"
+FACE_ANALYSIS_URL = "http://face-analysis:80/analyze"
+DISEASE_ANALYSIS_URL = "http://disease-analysis:8000/analyze"
 
 @app.post("/analyze")
 async def analyze_image(file: UploadFile = File(...)):

@@ -1,10 +1,13 @@
 package com.pdiagnosis.applicationService.controllers;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.pdiagnosis.Chat;
 import com.pdiagnosis.LLMRequestHistory;
 import com.pdiagnosis.applicationService.services.ChatService;
 import com.pdiagnosis.applicationService.services.LLMRequestHistoryService;
-import lombok.RequiredArgsConstructor;
+import jakarta.persistence.*;
+import lombok.*;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -15,6 +18,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -23,6 +27,8 @@ import java.util.Optional;
 @RestController
 @RequestMapping("/api/chats/history")
 @RequiredArgsConstructor
+@Slf4j  // <-- добавь это
+
 public class LLMRequestHistoryController {
 
     private final LLMRequestHistoryService llmRequestHistoryService;
@@ -39,24 +45,24 @@ public class LLMRequestHistoryController {
 
         Optional<Chat> chatOpt = chatService.findById(chatId);
 
-        System.out.println(">>> [DEBUG] chatId = " + chatId);
-        System.out.println(">>> [DEBUG] chatOpt.isPresent() = " + chatOpt.isPresent());
+        log.info(">>> [info] chatId = {}", chatId);
+        log.info(">>> [info] chatOpt.isPresent() = {}", chatOpt.isPresent());
 
         if (chatOpt.isEmpty()) {
-            System.out.println(">>> [DEBUG] Chat not found for chatId = " + chatId);
+            log.info(">>> [info] Chat not found for chatId = {}", chatId);
             return ResponseEntity.notFound().build();
         }
 
         Chat chat = chatOpt.get();
-        System.out.println(">>> [DEBUG] Chat found: id = " + chat.getId());
+        log.info(">>> [info] Chat found: id = {}", chat.getId());
         try {
             List<LLMRequestHistory> list = llmRequestHistoryService.findByChat(chat);
 
-            System.out.println(">>> [DEBUG] History size = " + list.size());
+            log.info(">>> [info] History size = {}", list.size());
 
-            List<Map<String, Object>> dtoList = toDto(list, chat.getId());
-
-            System.out.println(">>> [DEBUG] Returning DTO list with " + dtoList.size() + " items");
+            List<Map<String, Object>> dtoList = toDto(list, chatId);
+            log.info(">>> [info] History chat id = {}", dtoList.getFirst().getOrDefault("chatId","null"));
+            log.info(">>> [info] Returning DTO list with {} items", dtoList.size());
 
             return ResponseEntity.ok(dtoList);
         }catch (Exception e) {
@@ -73,7 +79,7 @@ public class LLMRequestHistoryController {
                     map.put("prompt", h.getPrompt());
                     map.put("response", h.getResponse());
                     map.put("imageUrl", h.getImageUrl());
-                    map.put("chatId", chatId);
+                    map.put("chatId", h.getChat().getId());
                     return map;
                 })
                 .toList();
@@ -120,7 +126,6 @@ public class LLMRequestHistoryController {
         }
     }
 
-
     /**
      * Создать новую запись истории
      */
@@ -135,11 +140,15 @@ public class LLMRequestHistoryController {
         }
 
         Chat chat = chatOpt.get();
+        chat.setId(chatId);
         try {
             // Создаём объект вручную
-            System.out.println("Prompt: " + requestBody.get("prompt"));
-            System.out.println("Response: " + requestBody.get("response"));
-            System.out.println("Types: " + requestBody.get("prompt").getClass() + ", " + requestBody.get("response").getClass());
+            log.info("chatId: {}", chatId);
+
+            log.info("Prompt: {}", requestBody.get("prompt"));
+            log.info("Response: {}", requestBody.get("response"));
+            log.info("Types: {}, {}", requestBody.get("prompt").getClass(),
+                    requestBody.get("response").getClass());
 
             LLMRequestHistory history = new LLMRequestHistory();
             history.setId(null);

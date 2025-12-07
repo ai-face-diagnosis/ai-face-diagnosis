@@ -1,5 +1,5 @@
 # --- Stage 1: Build ---
-FROM node:18-alpine AS builder
+FROM node:20 AS builder
 
 WORKDIR /app
 
@@ -10,7 +10,7 @@ COPY . .
 RUN npm run build
 
 # --- Stage 2: Run ---
-FROM node:18-alpine AS runner
+FROM node:20 AS runner
 
 WORKDIR /app
 
@@ -24,3 +24,4 @@ COPY --from=builder /app/public ./public
 
 EXPOSE 3000
 CMD ["npm", "start"]
+

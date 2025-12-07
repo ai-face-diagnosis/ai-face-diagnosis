@@ -45,7 +45,7 @@ public class GroqLlmClient implements LlmInterface {
             body.putAll(options);
         }
 
-        log.debug("📦 Request body JSON={}", objectMapper.writeValueAsString(body));
+        log.info("📦 Request body JSON={}", objectMapper.writeValueAsString(body));
 
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
@@ -54,13 +54,13 @@ public class GroqLlmClient implements LlmInterface {
         HttpEntity<String> request = new HttpEntity<>(objectMapper.writeValueAsString(body), headers);
 
         log.info("🌐 Sending request to Groq API: {}", apiUrl);
-        log.debug("📡 Headers: {}", headers);
+        log.info("📡 Headers: {}", headers);
 
         try {
             ResponseEntity<Map> response = restTemplate.exchange(apiUrl, HttpMethod.POST, request, Map.class);
 
             log.info("⬅️ Groq API status: {}", response.getStatusCode());
-            log.debug("⬅️ Groq API raw body: {}", response.getBody());
+            log.info("⬅️ Groq API raw body: {}", response.getBody());
 
             if (response.getStatusCode() != HttpStatus.OK) {
                 log.error("❌ Unexpected Groq status: {}", response.getStatusCode());
@@ -108,7 +108,7 @@ public class GroqLlmClient implements LlmInterface {
         ResponseEntity<Map> response = restTemplate.exchange(apiUrl, HttpMethod.POST, request, Map.class);
 
         log.info("⬅️ Groq update response status: {}", response.getStatusCode());
-        log.debug("⬅️ Groq update body: {}", response.getBody());
+        log.info("⬅️ Groq update body: {}", response.getBody());
 
         var choices = (List<Map<String, Object>>) response.getBody().get("choices");
         if (choices == null || choices.isEmpty()) {
@@ -128,7 +128,7 @@ public class GroqLlmClient implements LlmInterface {
     private static final Pattern PROBABILITY_PATTERN = Pattern.compile("\\d+");
 
     private List<String> parseIllness(String illness) {
-        log.debug("🔍 parseIllness(raw='{}')", illness);
+        log.info("🔍 parseIllness(raw='{}')", illness);
         try {
             if (illness == null || illness.isBlank()) return Collections.emptyList();
 
@@ -145,7 +145,7 @@ public class GroqLlmClient implements LlmInterface {
             Matcher m = PROBABILITY_PATTERN.matcher(probabilityStr);
             String probability = m.find() ? m.group() : "0";
 
-            log.debug("✅ Parsed illness: disease='{}', probability='{}', description='{}'",
+            log.info("✅ Parsed illness: disease='{}', probability='{}', description='{}'",
                     disease, probability, description);
 
             return List.of(disease, probability, description);

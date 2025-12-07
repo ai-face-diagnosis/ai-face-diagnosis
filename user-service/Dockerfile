@@ -21,7 +21,7 @@ COPY user-service/src ./src
 COPY --from=common-builder /root/.m2 /root/.m2
 
 # Кэшируем зависимости и собираем проект
-RUN mvn dependency:go-offline -B
+
 RUN mvn clean package -DskipTests
 
 # ==== Stage 3: Runtime ====
